@@ -905,6 +905,8 @@ function renderMobileCards(rows, capNum, spdVal, suggestedMap){
   const m = document.getElementById('mresults');
   if(!m) return;
   m.innerHTML = '';
+  // Mobile-only rendering: keep variables local (avoid ReferenceError on Safari/iOS)
+  const spdText = (spdVal==='__ALL__' || spdVal==null || spdVal==='') ? 'All' : String(spdVal);
   if(!rows.length){
     m.innerHTML = `<div class="muted" style="padding:6px 0">Không có kết quả cho combo này.</div>`;
     return;
@@ -963,6 +965,10 @@ function renderMobileCards(rows, capNum, spdVal, suggestedMap){
         openLightbox('assets/firetest_amec_detail.jpg');
       });
     }
+    // Determine the speed used for preview (same behavior as the desktop table)
+    const previewSpd = (spdVal==='__ALL__')
+      ? ((suggestedMap && suggestedMap.get(r) && suggestedMap.get(r).length) ? suggestedMap.get(r)[0] : null)
+      : spdVal;
     const open = ()=>showPreview([{row:r, cap:capNum, spd:previewSpd}]);
     card.addEventListener('click', open);
     card.addEventListener('keypress', (e)=>{ if(e.key==='Enter') open(); });
