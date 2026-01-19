@@ -1,0 +1,465 @@
+{
+  "note": "Max Travel loaded from Excel column H. Applies per row (Model + Standard).",
+  "items": [
+    {
+      "place": "Cargo Elevator",
+      "model": "LEHY-G",
+      "origin": "China [SMEC]",
+      "mr_type": "Machine room",
+      "standard": "EN81-20/50",
+      "capacity_set": "2000, 3000, 5000",
+      "speed_set": "0.5, 1",
+      "max_travel_m": 60.0
+    },
+    {
+      "place": "Cargo Elevator",
+      "model": "LEHY-G",
+      "origin": "China [SMEC]",
+      "mr_type": "Machine room",
+      "standard": "SMEC",
+      "capacity_set": "2000, 3000, 5000",
+      "speed_set": "0.5, 1",
+      "max_travel_m": 60.0
+    },
+    {
+      "place": "Cargo Elevator",
+      "model": "LEHY-L-G",
+      "origin": "China [SMEC]",
+      "mr_type": "Machine room less",
+      "standard": "EN81-20/50",
+      "capacity_set": "2000, 3000, 5000",
+      "speed_set": "0.5, 1",
+      "max_travel_m": 60.0
+    },
+    {
+      "place": "Cargo Elevator",
+      "model": "LEHY-L-G",
+      "origin": "China [SMEC]",
+      "mr_type": "Machine room less",
+      "standard": "SMEC",
+      "capacity_set": "2000, 3000, 5000",
+      "speed_set": "0.5, 1",
+      "max_travel_m": 60.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NexWay-S IP V2",
+      "origin": "Japan [MELINA]",
+      "mr_type": "Machine room",
+      "standard": "EN81-1",
+      "capacity_set": "825, 1050, 1200, 1275, 1350",
+      "speed_set": "1, 1.6, 1.75, 2, 2.5, 3",
+      "max_travel_m": 150.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NexWay-S IP V2",
+      "origin": "Japan [MELINA]",
+      "mr_type": "Machine room",
+      "standard": "EN81-1",
+      "capacity_set": "825, 1050, 1275, 1350",
+      "speed_set": "1, 1.6, 1.75, 2, 2.5, 3",
+      "max_travel_m": 150.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NEXIEZ-MR",
+      "origin": "Thailand [AMEC]",
+      "mr_type": "Machine room",
+      "standard": "EN81-1",
+      "capacity_set": "825, 1050, 1275, 1350",
+      "speed_set": "1, 1.6, 1.75, 2, 2.5",
+      "max_travel_m": 120.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NEXIEZ-MR",
+      "origin": "Thailand [AMEC]",
+      "mr_type": "Machine room",
+      "standard": "EN81-20/50",
+      "capacity_set": "825, 1000, 1050, 1275, 1350",
+      "speed_set": "1, 1.6, 1.75, 2, 2.5",
+      "max_travel_m": 120.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NexWay-S AP V2",
+      "origin": "Thailand [AMEC]",
+      "mr_type": "Machine room",
+      "standard": "EN81-1",
+      "capacity_set": "825, 1050, 1275, 1350",
+      "speed_set": "1, 1.6, 1.75, 2, 2.5, 3",
+      "max_travel_m": 150.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NexWay",
+      "origin": "China [MESE]",
+      "mr_type": "Machine room",
+      "standard": "MELCO",
+      "capacity_set": "900, 1050, 1200, 1350, 1600, 1800, 2000",
+      "speed_set": "2, 2.5, 3, 3.5, 4, 5, 6",
+      "max_travel_m": 150.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "LEHY-III-S",
+      "origin": "China [SMEC]",
+      "mr_type": "Machine room",
+      "standard": "EN81-20/50",
+      "capacity_set": "630, 825, 900, 1050, 1150, 1200, 1350, 1600",
+      "speed_set": "1, 1.75, 2, 2.5",
+      "max_travel_m": 120.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "LEHY-Pro",
+      "origin": "China [SMEC]",
+      "mr_type": "Machine room",
+      "standard": "EN81-20/50",
+      "capacity_set": "630, 825, 1050, 1150, 1200, 1350, 1600, 1800, 2025, 2250, 2500",
+      "speed_set": "1, 1.75, 2, 2.5, 3",
+      "max_travel_m": 150.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NexWay-S IP V2",
+      "origin": "Japan [MELINA]",
+      "mr_type": "Machine room",
+      "standard": "EN81-20/50",
+      "capacity_set": "825, 1000, 1050, 1200, 1275, 1350",
+      "speed_set": "1, 1.6, 1.75, 2, 2.5, 3",
+      "max_travel_m": 150.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NexWay-S IP V2",
+      "origin": "Japan [MELINA]",
+      "mr_type": "Machine room",
+      "standard": "EN81-20/50",
+      "capacity_set": "825, 1000, 1050, 1200, 1275, 1350",
+      "speed_set": "1, 1.6, 1.75, 2, 2.5, 3",
+      "max_travel_m": 150.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NexWay-S AP V2",
+      "origin": "Thailand [AMEC]",
+      "mr_type": "Machine room",
+      "standard": "EN81-20/50",
+      "capacity_set": "825, 1000, 1050, 1200, 1275, 1350",
+      "speed_set": "1, 1.6, 1.75, 2, 2.5, 3",
+      "max_travel_m": 150.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NexWay-S AP V2 – Package R",
+      "origin": "Thailand [AMEC]",
+      "mr_type": "Machine room",
+      "standard": "MELCO",
+      "capacity_set": "1000, 1050, 1200, 1275, 1350",
+      "speed_set": "3.5, 4",
+      "max_travel_m": 180.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NexWay-S AP V2 – Package R",
+      "origin": "Thailand [AMEC]",
+      "mr_type": "Machine room",
+      "standard": "EN81-20/50",
+      "capacity_set": "1000, 1050, 1200, 1275, 1350",
+      "speed_set": "3.5, 4",
+      "max_travel_m": 180.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NexWay",
+      "origin": "China [MESE]",
+      "mr_type": "Machine room",
+      "standard": "MELCO",
+      "capacity_set": "900, 1050, 1200, 1350, 1600, 1800, 2000",
+      "speed_set": "2, 2.5, 3, 3.5, 4, 5, 6",
+      "max_travel_m": 150.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NEXIEZ-MR",
+      "origin": "Thailand [AMEC]",
+      "mr_type": "Machine room",
+      "standard": "MELCO",
+      "capacity_set": "450, 550, 600, 700, 750, 900, 1000, 1150, 1350, 1600",
+      "speed_set": "1, 1.5, 1.75, 2",
+      "max_travel_m": 120.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NEXIEZ-MR",
+      "origin": "Thailand [AMEC]",
+      "mr_type": "Machine room",
+      "standard": "MELCO",
+      "capacity_set": "450, 550, 600, 700, 750, 900, 1000, 1150, 1350, 1600",
+      "speed_set": "2.5",
+      "max_travel_m": 134.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "LEHY-III-S",
+      "origin": "China [SMEC]",
+      "mr_type": "Machine room",
+      "standard": "SMEC",
+      "capacity_set": "630, 825, 900, 1050, 1150, 1200, 1350, 1600",
+      "speed_set": "1, 1.75, 2, 2.5",
+      "max_travel_m": 120.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "LEHY-Pro",
+      "origin": "China [SMEC]",
+      "mr_type": "Machine room",
+      "standard": "SMEC",
+      "capacity_set": "630, 825, 1050, 1150, 1200, 1350, 1600, 1800, 2025, 2250, 2500",
+      "speed_set": "1, 1.75, 2, 2.5, 3",
+      "max_travel_m": 150.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NEXIEZ-S",
+      "origin": "Thailand [AMEC]",
+      "mr_type": "Machine room less",
+      "standard": "EN81-1",
+      "capacity_set": "320, 450",
+      "speed_set": "1",
+      "max_travel_m": 30.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NEXIEZ-MRL",
+      "origin": "China [MESE]",
+      "mr_type": "Machine room less",
+      "standard": "EN81-20/50",
+      "capacity_set": "450, 550, 630, 825, 1050, 1200, 1275, 1350, 1600, 1800, 2000, 2250, 2500",
+      "speed_set": "1, 1.6, 1.75, 2, 2.5",
+      "max_travel_m": 105.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "LEHY-L-Pro",
+      "origin": "China [SMEC]",
+      "mr_type": "Machine room less",
+      "standard": "EN81-20/50",
+      "capacity_set": "630, 825, 1050, 1200, 1350, 1600, 1800, 2000, 2250, 2500",
+      "speed_set": "0.5, 1, 1.6, 1.75, 2, 2.5, 3",
+      "max_travel_m": 120.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "LEHY-L-S",
+      "origin": "China [SMEC]",
+      "mr_type": "Machine room less",
+      "standard": "EN81-20/50",
+      "capacity_set": "320, 450, 550, 630, 825, 1050",
+      "speed_set": "0.4, 0.63, 1, 1.75",
+      "max_travel_m": 88.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NEXIEZ-Fit",
+      "origin": "Thailand [AMEC]",
+      "mr_type": "Machine room less",
+      "standard": "EN81-20/50",
+      "capacity_set": "450, 630",
+      "speed_set": "1",
+      "max_travel_m": 30.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NEXIEZ-MRL V2",
+      "origin": "Thailand [AMEC]",
+      "mr_type": "Machine room less",
+      "standard": "EN81-20/50",
+      "capacity_set": "450, 630, 825, 1000, 1275, 1350, 1600, 1800",
+      "speed_set": "1, 1.6, 1.75, 2, 2.5",
+      "max_travel_m": 105.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NEXIEZ-MRL",
+      "origin": "China [MESE]",
+      "mr_type": "Machine room less",
+      "standard": "MELCO",
+      "capacity_set": "450, 550, 630, 825, 1050, 1200, 1275, 1350, 1600, 1800, 2000, 2250, 2500",
+      "speed_set": "1, 1.6, 1.75, 2, 2.5",
+      "max_travel_m": 105.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NEXIEZ-MRL V2",
+      "origin": "Thailand [AMEC]",
+      "mr_type": "Machine room less",
+      "standard": "MELCO",
+      "capacity_set": "450, 630, 825, 1000, 1275, 1350, 1600, 1800",
+      "speed_set": "1, 1.6, 1.75, 2, 2.5",
+      "max_travel_m": 105.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NEXIEZ-S",
+      "origin": "Thailand [AMEC]",
+      "mr_type": "Machine room less",
+      "standard": "MELCO",
+      "capacity_set": "320, 450",
+      "speed_set": "1",
+      "max_travel_m": 30.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "LEHY-L-Pro",
+      "origin": "China [SMEC]",
+      "mr_type": "Machine room less",
+      "standard": "SMEC",
+      "capacity_set": "630, 825, 1050, 1200, 1350, 1600, 1800, 2000, 2250, 2500",
+      "speed_set": "0.5, 1, 1.6, 1.75, 2, 2.5, 3",
+      "max_travel_m": 120.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "LEHY-L-S",
+      "origin": "China [SMEC]",
+      "mr_type": "Machine room less",
+      "standard": "SMEC",
+      "capacity_set": "320, 450, 550, 630, 825, 1050",
+      "speed_set": "0.4, 0.63, 1, 1.75",
+      "max_travel_m": 80.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NexWay",
+      "origin": "Japan [MELINA]",
+      "mr_type": "Machine room",
+      "standard": "EN81-20/50",
+      "capacity_set": "750, 825, 900, 1000, 1050, 1200, 1275, 1350, 1600, 1800, 2000, 2250, 2500, 3000",
+      "speed_set": "2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10",
+      "max_travel_m": 250.0
+    },
+    {
+      "place": "Cargo Elevator",
+      "model": "GFM-T",
+      "origin": "Japan [MELINA]",
+      "mr_type": "Machine room",
+      "standard": "MELCO",
+      "capacity_set": "750, 1000, 1500, 2000, 2500, 3000",
+      "speed_set": "0.75, 1",
+      "max_travel_m": 30.0
+    },
+    {
+      "place": "Cargo Elevator",
+      "model": "GFC-L3",
+      "origin": "Taiwan [TMEC]",
+      "mr_type": "Machine room",
+      "standard": "MELCO",
+      "capacity_set": "750, 1000, 1500, 2000, 2500",
+      "speed_set": "0.75, 1, 1.5, 1.75",
+      "max_travel_m": 80.0
+    },
+    {
+      "place": "Cargo Elevator",
+      "model": "GFC-L2",
+      "origin": "Taiwan [TMEC]",
+      "mr_type": "Machine room",
+      "standard": "MELCO",
+      "capacity_set": "750, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 5000",
+      "speed_set": "0.5, 0.75, 1, 1.5, 1.75",
+      "max_travel_m": 40.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NexWay",
+      "origin": "China [MESE]",
+      "mr_type": "Machine room",
+      "standard": "EN81-20/50",
+      "capacity_set": "900, 1050, 1200, 1350, 1600, 1800, 2000",
+      "speed_set": "2, 2.5, 3, 3.5, 4, 5, 6",
+      "max_travel_m": 150.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NexWay-S",
+      "origin": "China [MESE]",
+      "mr_type": "Machine room",
+      "standard": "MELCO",
+      "capacity_set": "825, 900, 1000, 1050, 1200, 1350, 1600, 1800",
+      "speed_set": "1, 1.6, 1.75, 2, 2.5, 3",
+      "max_travel_m": 150.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NexWay-S",
+      "origin": "China [MESE]",
+      "mr_type": "Machine room",
+      "standard": "EN81-20/50",
+      "capacity_set": "825, 900, 1000, 1050, 1200, 1350, 1600, 1800",
+      "speed_set": "1, 1.6, 1.75, 2, 2.5, 3",
+      "max_travel_m": 150.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NEXIEZ-MRL",
+      "origin": "Japan [MELINA]",
+      "mr_type": "Machine room less",
+      "standard": "MELCO",
+      "capacity_set": "630, 825, 1050, 1275, 1350, 1600",
+      "speed_set": "1, 1.6, 1.75, 2, 2.5",
+      "max_travel_m": 80.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NEXIEZ-MRL",
+      "origin": "Japan [MELINA]",
+      "mr_type": "Machine room less",
+      "standard": "EN81-1",
+      "capacity_set": "630, 825, 1050, 1275, 1350, 1600",
+      "speed_set": "1, 1.6, 1.75, 2, 2.5",
+      "max_travel_m": 80.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NEXIEZ-MRL",
+      "origin": "Japan [MELINA]",
+      "mr_type": "Machine room less",
+      "standard": "EN81-20/50",
+      "capacity_set": "630, 825, 1050, 1275, 1350, 1600",
+      "speed_set": "1, 1.6, 1.75, 2, 2.5",
+      "max_travel_m": 80.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "ELENESSA",
+      "origin": "Taiwan [TMEC]",
+      "mr_type": "Machine room less",
+      "standard": "EN81-20/50",
+      "capacity_set": "1800, 2000, 2250, 2500",
+      "speed_set": "1, 1.6, 1.75",
+      "max_travel_m": 60.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NexWay-S Series IP",
+      "origin": "Japan [MELINA]",
+      "mr_type": "Machine room",
+      "standard": "EN81-1",
+      "capacity_set": "1600, 1800, 2025, 2250, 2500",
+      "speed_set": "0.75, 1, 1.6, 1.75",
+      "max_travel_m": 80.0
+    },
+    {
+      "place": "Passenger elevator",
+      "model": "NexWay-S Series IP",
+      "origin": "Japan [MELINA]",
+      "mr_type": "Machine room",
+      "standard": "EN81-20/50",
+      "capacity_set": "1600, 1800, 2025, 2250, 2500",
+      "speed_set": "0.75, 1, 1.6, 1.75",
+      "max_travel_m": 80.0
+    }
+  ]
+}

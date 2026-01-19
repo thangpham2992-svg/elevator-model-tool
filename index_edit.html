@@ -1,0 +1,1086 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Elevator Sales Tool (Offline)</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0b3d91">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+:root{--bg:#f6f8fb;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e5e7eb;--pri:#2563eb;--pri2:#1d4ed8;--chip:#e8f0ff;}
+*{box-sizing:border-box;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial}
+/*
+  iOS Safari can report a wider layout viewport than the visible viewport.
+  If we hide horizontal overflow, content may get clipped with no way to scroll.
+  We allow horizontal overflow as a safety fallback, while the shrink/wrap rules
+  below ensure the UI normally fits screen width without left-right scrolling.
+*/
+html,body{width:100%;max-width:100%;overflow-x:auto;-webkit-text-size-adjust:100%;}
+body{margin:0;background:var(--bg);color:var(--text)}
+/* iOS/mobile: prevent any horizontal clipping by forcing all major blocks to fit viewport */
+@media (max-width: 820px){
+  html,body{overflow-x:hidden;}
+  main{padding:12px;max-width:100vw;}
+  .grid,.card,.tablewrap,#preview.previewGrid,.previewCard,.mresults{max-width:100%;}
+  body::before, body::after{display:none;}
+  .chip{white-space:normal;}
+}
+
+header{padding:18px 22px;border-bottom:1px solid var(--line);background:#fff;position:static;top:0;z-index:3}
+header{display:none}
+h1{margin:0;font-size:18px}
+small{color:var(--muted)}
+main{padding:18px 22px}
+.grid{display:grid;grid-template-columns:360px 1fr;gap:16px;align-items:start}
+/* Allow grid/flex children to actually shrink on iOS (prevents horizontal clipping). */
+.grid>*{min-width:0}
+.card{min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 24px rgba(15,23,42,.06)}
+.card .p{padding:16px}
+/* Output panel: light blue tint across the whole block.
+   IMPORTANT: keep it OPAQUE so the right-side background image never overlays table data. */
+.resultsCard{
+  background:linear-gradient(180deg, rgba(239,246,255,1) 0%, rgba(255,255,255,1) 240px, rgba(255,255,255,1) 100%);
+  border:2px solid rgba(59,130,246,.35)
+}
+.resultsTitle{font-size:40px;line-height:1.1;font-weight:900;letter-spacing:-0.02em;margin:0 0 6px 0;color:var(--text)}
+.resultsSub{font-size:14px}
+.techNote{margin-top:6px;font-size:13px;font-weight:700;color:#9a3412}
+label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
+select,input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;font-size:14px;outline:none}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btns{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+button{border:0;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer}
+.primary{background:var(--pri);color:#fff}
+.primary:hover{background:var(--pri2)}
+.ghost{background:#eef2ff;color:#1e3a8a}
+.warn{color:#b91c1c;font-size:12px;margin-top:10px;min-height:16px}
+.tablewrap{overflow-x:auto;overflow-y:scroll;-webkit-overflow-scrolling:touch;border-top:1px solid var(--line);max-height:420px;background:#fff;scrollbar-gutter:stable}
+/* Default to fluid table (prevents iOS clipping when breakpoints misfire). */
+table{width:100%;min-width:0;border-collapse:collapse;font-size:13px}
+/* On desktop we can keep a wider minimum for nicer column spacing. */
+@media (min-width: 1025px){table{min-width:920px}}
+th,td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{text-align:left;color:var(--muted);font-weight:700;background:#fafafa;position:sticky;top:0}
+.chip{display:inline-flex;gap:6px;align-items:center;background:var(--chip);border:1px solid #dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:999px;font-size:12px;max-width:100%;min-width:0;flex-wrap:wrap}
+.kv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+.kv .box{border:1px dashed var(--line);border-radius:14px;padding:10px;background:#fbfdff}
+.kv b{display:block}
+.muted{color:var(--muted)}
+
+/* Meta + right note */
+.metaBar{max-width:1120px;margin:0 auto;padding:8px 22px 12px 22px;font-size:12px;display:flex;justify-content:space-between;gap:12px;align-items:flex-end;color:rgba(0,0,0,.92);background:rgba(255,255,255,.75);border:1px solid rgba(0,0,0,.06);border-top:0;border-bottom-left-radius:18px;border-bottom-right-radius:18px;backdrop-filter:blur(4px);text-shadow:0 1px 0 rgba(255,255,255,.9)}
+.statusRow{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.statusRow>*{min-width:0}
+.seNote{font-size:12px;color:#374151;font-weight:600;text-align:right;max-width:420px}
+.seMeta{font-size:11px;color:#6b7280;text-align:right;margin-top:2px}
+
+/* Pass/Fail marks */
+.mark{display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;line-height:1;width:22px;height:22px;border-radius:6px}
+.mark.pass{color:#16a34a;border:1px solid rgba(22,163,74,.35);background:rgba(22,163,74,.08)}
+.mark.fail{color:#dc2626;border:1px solid rgba(220,38,38,.35);background:rgba(220,38,38,.08)}
+/* Mobile/tablet: force single-column so the app always fits phone width (even if browser reports ~980px). */
+@media(max-width:1200px){.grid{grid-template-columns:1fr} header{position:static} th{position:static}}
+
+/* Preview grid: show multiple options without forcing page scroll */
+#preview.previewGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
+@media(max-width:1200px){#preview.previewGrid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:820px){#preview.previewGrid{grid-template-columns:1fr;}}
+@media(max-width:520px){
+  /* reduce side overlays to avoid horizontal overflow on mobile */
+  body::before, body::after{width:16vw;min-width:72px;opacity:.20}
+  /* stack capacity & speed inputs */
+  .row2{grid-template-columns:1fr;}
+  /* allow table to scroll horizontally instead of shrinking columns */
+  table{min-width:760px;}
+}
+.previewCard{min-height:360px}
+.previewCard .imgBox{margin-top:10px;border:1px dashed var(--line);border-radius:12px;height:220px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff}
+.previewCard img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+
+
+/* === Minimal UI tweaks === */
+.kv{display:none !important;}
+/* hide catalogue folder picker + explanatory note */
+#folder, #folderHint{display:none !important;}
+label[for="folder"], label:has(+ #folder){display:none !important;}
+/* some browsers don't support :has; hide the specific label by id hook */
+#folderLabel{display:none !important;}
+/* remove Why column text emphasis */
+th.whyCol, td.whyCol{display:none !important;}
+/* origin logo column */
+th.logoCol{width:34px;}
+td.logoCol{text-align:center;}
+td.logoCol img{width:22px;height:22px;object-fit:contain;vertical-align:middle;opacity:.95;}
+/* lightbox */
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;z-index:9999;padding:18px;}
+.lightbox.open{display:flex;}
+.lightbox .lb-inner{position:relative;max-width:min(1100px,96vw);max-height:92vh;}
+.lightbox img{max-width:100%;max-height:92vh;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.45);}
+.lightbox .lb-close{position:absolute;top:-12px;right:-12px;width:40px;height:40px;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.55);color:#fff;font-size:22px;cursor:pointer;}
+.lightbox .lb-close:hover{background:rgba(0,0,0,.7);}
+/* background side overlays */
+body::before, body::after{
+  content:"";
+  position:fixed;
+  top:0;
+  bottom:0;
+  width:min(22vw, 360px);
+  min-width:140px;
+  z-index:0;
+  pointer-events:none;
+  /* prioritize vertical visibility (fit height), crop width by pseudo-element width */
+  background-size:auto 100%;
+  background-position:left center;
+  background-repeat:no-repeat;
+  opacity:.58; /* default for left (stronger) */
+}
+body::before{
+  left:0;
+  background-image:url("assets/bg_left.jpg");
+  background-position:left center;
+}
+body::after{
+  right:0;
+  background-image:url("assets/bg_right.jpg");
+  opacity:.70; /* show right image ~70% */
+  background-position:right center;
+}
+main{position:relative;z-index:1;}
+/* make preview images clickable */
+.previewCard .imgBox img{cursor:zoom-in;}
+.metaBar .by{font-weight:700;}
+.metaBar .ver{font-weight:600;}
+/* UI request: remove the top floating/header meta bar; keep only the SE note at top-right of result panel */
+.metaBar{display:none !important;}
+
+  .mark-note{margin-left:6px;font-size:12px;color:#6b7280;vertical-align:middle;}
+  .fire-detail{margin-left:8px;font-size:12px;color:#2563eb;text-decoration:underline;cursor:pointer;white-space:nowrap;}
+
+/* Responsive improvements */
+.mresults{display:none;padding:12px 16px}
+.mcard{border:1px solid var(--line);border-radius:14px;background:#fff;padding:12px 12px;margin:10px 0;box-shadow:0 6px 18px rgba(15,23,42,.06)}
+.mtop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.mtitle{font-weight:800;font-size:14px;line-height:1.2}
+.mmeta{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.mrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:12px;color:var(--muted)}
+.mrow b{color:var(--text)}
+.mactions{margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.mlink{color:var(--pri);text-decoration:underline;font-weight:700;font-size:12px}
+@media (max-width: 1024px){
+  main{padding:12px}
+  .grid{grid-template-columns:1fr;gap:12px}
+  .tablewrap{max-height:unset}
+  table{min-width:0}
+  th,td{white-space:normal;word-break:break-word}
+  .whyCol{display:none}
+  th.whyCol{display:none}
+  .logoCol{display:none}
+  th.logoCol{display:none}
+}
+@media (max-width: 768px){
+  .tablewrap{display:none}
+  .mresults{display:block}
+  .btns button{flex:1}
+  .row2{grid-template-columns:1fr}
+}
+
+
+    /* Results panel emphasis (international UI) */
+    #mresults{
+      background:#ffffff;
+      border:2px solid rgba(110,160,255,.9);
+      box-shadow:0 16px 40px rgba(0,0,0,.08);
+    }
+    #mresults .metaBar{opacity:1;}
+    
+</style>
+</head>
+<body>
+<header>
+  <h1>Model / Standard Selector by Capacity & Speed <span class="muted" style="font-weight:600">— offline</span></h1>
+  <small>Rule: <b>Capacity & Speed must be EXACT</b> (no approximations). Input is minimal; output returns matching options. <b>Model + Origin</b> for reference.</small>
+</header>
+
+<main>
+  <div class="metaBar"><div class="by">By P.T.Thang - SE Dept</div><div class="ver">Updated: 2026-01-13 • Revise 2</div></div>
+  <div class="grid">
+    <div class="card">
+      <div class="p">
+        <label>Place of Uses</label>
+        <select id="place"></select>
+
+        <label>Machine room type</label>
+        <select id="mr"></select>
+
+        <label>Standard</label>
+        <select id="std"></select>
+
+        <label>Origin</label>
+        <select id="country"></select>
+
+        <div class="row2">
+          <div>
+            <label>Capacity (kg) — exact</label>
+            <select id="cap"></select>
+          </div>
+          <div>
+            <label>Speed (m/s) — exact</label>
+            <select id="spd"></select>
+          </div>
+        </div>
+
+        <div style="margin-top:10px">
+          <label>Travel (m) — input</label>
+          <input id="travelInput" type="number" min="0" step="0.1" placeholder="Enter Travel (m)"/>
+          
+        </div>
+
+        <div class="btns">
+          <button class="primary" id="run">Run</button>
+          <button class="ghost" id="reset">Reset</button>
+</div>
+
+        <div class="warn" id="warn"></div>
+
+        <div class="kv">
+          <div class="box"><span class="muted">Results</span><b id="count">0</b></div>
+          <div class="box"><span class="muted">Unique Model</span><b id="uniq">0</b></div>
+          <div class="box"><span class="muted">Unique Origin</span><b id="uniqO">0</b></div>
+        </div>
+      <label id="folderLabel">Select catalogue folder (one-time browse)</label>
+        <input id="folder" type="file" webkitdirectory directory multiple />
+        <div class="muted" id="folderHint" style="font-size:12px;margin-top:6px"></div>
+      </div>
+    </div>
+
+    <div class="card resultsCard">
+      <div class="p" style="padding-bottom:0">
+        <div class="statusRow">
+          <div>
+            <div class="resultsTitle">Results</div>
+            <div class="muted resultsSub" id="status">Ready. Click Run.</div>
+            <div class="techNote" id="techNote" style="display:none"></div>
+          </div>
+          <div>
+            <div class="seNote">By P.T.Thang - SE Dept</div>
+            <div class="seMeta" id="metaLine">Updated: <span id="updatedDate">2026-01-13</span> • Revise 2</div>
+          </div>
+        </div>
+      </div>
+      <div id="mresults" class="mresults" aria-label="Mobile results"></div>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:40px">#</th>
+              <th>Model</th>
+              <th>Standard</th>
+              <th>Origin</th>
+              <th class="logoCol"></th>
+              <th>MR Type</th>
+              <th>OBTAINING COC-Hợp quy</th>
+              <th>Fireproof door Testing</th>
+              <th>Matched</th>
+              <th class="whyCol">Why</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="p">
+        <h3 style="margin:0 0 8px 0;font-size:14px">Catalogue preview (top 6 options)</h3>
+        <div class="muted" style="font-size:12px;margin-bottom:10px">Click a row in the table to preview the selected catalogue.</div>
+        <div id="preview" class="previewGrid"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+
+  <div id="lightbox" class="lightbox" aria-hidden="true">
+    <div class="lb-inner">
+      <button class="lb-close" id="lbClose" aria-label="Close">×</button>
+      <img id="lbImg" alt="Catalogue image"/>
+    </div>
+  </div>
+<script>
+const DATA = [{"model":"LEHY-G","origin":"China [SMEC]","standard":"EN81-20/50","place":"Cargo Elevator","mr":"Machine room","pairs":[[2000,0.5],[2000,1.0],[3000,0.5],[3000,1.0],[5000,0.5]]},{"model":"LEHY-G","origin":"China [SMEC]","standard":"SMEC","place":"Cargo Elevator","mr":"Machine room","pairs":[[2000,0.5],[2000,1.0],[3000,0.5],[3000,1.0],[5000,0.5]]},{"model":"LEHY-L-G","origin":"China [SMEC]","standard":"EN81-20/50","place":"Cargo Elevator","mr":"Machine room less","pairs":[[2000,0.5],[2000,1.0],[3000,0.5],[3000,1.0],[5000,0.5]]},{"model":"LEHY-L-G","origin":"China [SMEC]","standard":"SMEC","place":"Cargo Elevator","mr":"Machine room less","pairs":[[2000,0.5],[2000,1.0],[3000,0.5],[3000,1.0],[5000,0.5]]},{"model":"NexWay-S IP V2","origin":"Japan [MELINA]","standard":"EN81-1","place":"Passenger elevator","mr":"Machine room","pairs":[[825,1.0],[825,1.6],[825,1.75],[825,2.0],[825,2.5],[825,3.0],[1050,1.0],[1050,1.6],[1050,1.75],[1050,2.0],[1050,2.5],[1050,3.0],[1200,1.0],[1200,1.6],[1200,1.75],[1200,2.0],[1200,2.5],[1200,3.0],[1275,1.0],[1275,1.6],[1275,1.75],[1275,2.0],[1275,2.5],[1275,3.0],[1350,1.0],[1350,1.6],[1350,1.75],[1350,2.0],[1350,2.5],[1350,3.0]]},{"model":"NexWay-S IP V2","origin":"Japan [MELINA]","standard":"EN81-1","place":"Passenger elevator","mr":"Machine room","pairs":[[825,3.0],[1050,3.0],[1275,3.0],[1350,3.0],[825,2.5],[1050,2.5],[1275,2.5],[1350,2.5],[825,2.0],[1050,2.0],[1275,2.0],[1350,2.0],[825,1.75],[1050,1.75],[1275,1.75],[1350,1.75],[825,1.6],[1050,1.6],[1275,1.6],[1350,1.6],[825,1.0],[1050,1.0],[1275,1.0],[1350,1.0]]},{"model":"NEXIEZ-MR","origin":"Thailand [AMEC]","standard":"EN81-1","place":"Passenger elevator","mr":"Machine room","pairs":[[825,1.0],[825,1.6],[825,1.75],[825,2.0],[825,2.5],[1050,1.0],[1050,1.6],[1050,1.75],[1050,2.0],[1050,2.5],[1275,1.0],[1275,1.6],[1275,1.75],[1275,2.0],[1275,2.5],[1350,1.0],[1350,1.6],[1350,1.75],[1350,2.0],[1350,2.5]]},{"model":"NEXIEZ-MR","origin":"Thailand [AMEC]","standard":"EN81-20/50","place":"Passenger elevator","mr":"Machine room","pairs":[[825,1.0],[825,1.6],[825,1.75],[825,2.0],[825,2.5],[1000,1.0],[1000,1.6],[1000,1.75],[1000,2.0],[1000,2.5],[1050,1.0],[1050,1.6],[1050,1.75],[1050,2.0],[1050,2.5],[1275,1.0],[1275,1.6],[1275,1.75],[1275,2.0],[1275,2.5],[1350,1.0],[1350,1.6],[1350,1.75],[1350,2.0],[1350,2.5]]},{"model":"NexWay-S AP V2","origin":"Thailand [AMEC]","standard":"EN81-1","place":"Passenger elevator","mr":"Machine room","pairs":[[825,3.0],[1050,3.0],[1275,3.0],[1350,3.0],[825,2.5],[1050,2.5],[1275,2.5],[1350,2.5],[825,2.0],[1050,2.0],[1275,2.0],[1350,2.0],[825,1.75],[1050,1.75],[1275,1.75],[1350,1.75],[825,1.6],[1050,1.6],[1275,1.6],[1350,1.6],[825,1.0],[1050,1.0],[1275,1.0],[1350,1.0]]},{"model":"NexWay","origin":"China [MESE]","standard":"MELCO","place":"Passenger elevator","mr":"Machine room","pairs":[[900,2.0],[900,2.5],[900,3.0],[900,3.5],[900,4.0],[1050,2.0],[1050,2.5],[1050,3.0],[1050,3.5],[1050,4.0],[1200,2.0],[1200,2.5],[1200,3.0],[1200,3.5],[1200,4.0],[1200,5.0],[1200,6.0],[1350,2.0],[1350,2.5],[1350,3.0],[1350,3.5],[1350,4.0],[1350,5.0],[1350,6.0],[1600,2.0],[1600,2.5],[1600,3.0],[1600,3.5],[1600,4.0],[1600,5.0],[1600,6.0],[1800,2.0],[1800,2.5],[1800,3.0],[1800,3.5],[1800,4.0],[1800,5.0],[1800,6.0],[2000,2.0],[2000,2.5],[2000,3.0],[2000,3.5],[2000,4.0],[2000,5.0],[2000,6.0]]},{"model":"LEHY-III-S","origin":"China [SMEC]","standard":"EN81-20/50","place":"Passenger elevator","mr":"Machine room","pairs":[[630,1.0],[825,1.0],[900,1.0],[1050,1.0],[630,1.6],[825,1.6],[900,1.6],[1050,1.6],[630,1.75],[825,1.75],[900,1.75],[1050,1.75],[825,2.0],[900,2.0],[1050,2.0],[825,2.5],[900,2.5],[1050,2.5]]},{"model":"LEHY-Pro","origin":"China [SMEC]","standard":"EN81-20/50","place":"Passenger elevator","mr":"Machine room","pairs":[[630,1.0],[825,1.0],[1050,1.0],[1200,1.0],[1350,1.0],[1600,1.0],[1800,1.0],[2025,1.0],[2250,1.0],[2500,1.0],[630,1.75],[825,1.75],[1050,1.75],[1200,1.75],[1350,1.75],[1600,1.75],[1800,1.75],[2025,1.75],[2250,1.75],[2500,1.75],[825,2.0],[1050,2.0],[1200,2.0],[1350,2.0],[1600,2.0],[1800,2.0],[2025,2.0],[825,2.5],[1050,2.5],[1200,2.5],[1350,2.5],[1600,2.5],[1800,2.5],[2025,2.5],[825,3.0],[1050,3.0],[1200,3.0],[1350,3.0],[1600,3.0]]},{"model":"NexWay-S IP V2","origin":"Japan [MELINA]","standard":"EN81-20/50","place":"Passenger elevator","mr":"Machine room","pairs":[[825,1.0],[825,1.6],[825,1.75],[825,2.0],[825,2.5],[825,3.0],[1000,1.0],[1000,1.6],[1000,1.75],[1000,2.0],[1000,2.5],[1000,3.0],[1050,1.0],[1050,1.6],[1050,1.75],[1050,2.0],[1050,2.5],[1050,3.0],[1200,1.0],[1200,1.6],[1200,1.75],[1200,2.0],[1200,2.5],[1200,3.0],[1275,1.0],[1275,1.6],[1275,1.75],[1275,2.0],[1275,2.5],[1275,3.0],[1350,1.0],[1350,1.6],[1350,1.75],[1350,2.0],[1350,2.5],[1350,3.0]]},{"model":"NexWay-S IP V2","origin":"Japan [MELINA]","standard":"EN81-20/50","place":"Passenger elevator","mr":"Machine room","pairs":[[825,3.0],[1000,3.0],[1050,3.0],[1200,3.0],[1275,3.0],[1350,3.0],[825,2.5],[1000,2.5],[1050,2.5],[1200,2.5],[1275,2.5],[1350,2.5],[825,2.0],[1000,2.0],[1050,2.0],[1200,2.0],[1275,2.0],[1350,2.0],[825,1.75],[1000,1.75],[1050,1.75],[1200,1.75],[1275,1.75],[1350,1.75],[825,1.6],[1000,1.6],[1050,1.6],[1200,1.6],[1275,1.6],[1350,1.6],[825,1.0],[1000,1.0],[1050,1.0],[1200,1.0],[1275,1.0],[1350,1.0]]},{"model":"NexWay-S AP V2","origin":"Thailand [AMEC]","standard":"EN81-20/50","place":"Passenger elevator","mr":"Machine room","pairs":[[825,3.0],[1000,3.0],[1050,3.0],[1200,3.0],[1275,3.0],[1350,3.0],[825,2.5],[1000,2.5],[1050,2.5],[1200,2.5],[1275,2.5],[1350,2.5],[825,2.0],[1000,2.0],[1050,2.0],[1200,2.0],[1275,2.0],[1350,2.0],[825,1.75],[1000,1.75],[1050,1.75],[1200,1.75],[1275,1.75],[1350,1.75],[825,1.6],[1000,1.6],[1050,1.6],[1200,1.6],[1275,1.6],[1350,1.6],[825,1.0],[1000,1.0],[1050,1.0],[1200,1.0],[1275,1.0],[1350,1.0]]},{"model":"NexWay-S AP V2 – Package R","origin":"Thailand [AMEC]","standard":"MELCO","place":"Passenger elevator","mr":"Machine room","pairs":[[1000,3.5],[1000,4.0],[1050,3.5],[1050,4.0],[1200,3.5],[1200,4.0],[1275,3.5],[1275,4.0],[1350,3.5],[1350,4.0]]},{"model":"NexWay-S AP V2 – Package R","origin":"Thailand [AMEC]","standard":"EN81-20/50","place":"Passenger elevator","mr":"Machine room","pairs":[[1000,3.5],[1000,4.0],[1050,3.5],[1050,4.0],[1200,3.5],[1200,4.0],[1275,3.5],[1275,4.0],[1350,3.5],[1350,4.0]]},{"model":"NexWay","origin":"China [MESE]","standard":"MELCO","place":"Passenger elevator","mr":"Machine room","pairs":[[900,2.0],[900,2.5],[900,3.0],[900,3.5],[900,4.0],[1050,2.0],[1050,2.5],[1050,3.0],[1050,3.5],[1050,4.0],[1200,2.0],[1200,2.5],[1200,3.0],[1200,3.5],[1200,4.0],[1200,5.0],[1200,6.0],[1350,2.0],[1350,2.5],[1350,3.0],[1350,3.5],[1350,4.0],[1350,5.0],[1350,6.0],[1600,2.0],[1600,2.5],[1600,3.0],[1600,3.5],[1600,4.0],[1600,5.0],[1600,6.0],[1800,2.0],[1800,2.5],[1800,3.0],[1800,3.5],[1800,4.0],[1800,5.0],[1800,6.0],[2000,2.0],[2000,2.5],[2000,3.0],[2000,3.5],[2000,4.0],[2000,5.0],[2000,6.0]]},{"model":"NEXIEZ-MR","origin":"Thailand [AMEC]","standard":"MELCO","place":"Passenger elevator","mr":"Machine room","pairs":[[450,1.0],[550,1.0],[550,1.5],[550,1.75],[600,1.0],[600,1.5],[600,1.75],[700,1.0],[700,1.5],[700,1.75],[750,1.0],[750,1.5],[750,1.75],[750,2.0],[750,2.5],[900,1.0],[900,1.5],[900,1.75],[900,2.0],[900,2.5],[1000,1.0],[1000,1.5],[1000,1.75],[1000,2.0],[1000,2.5],[1150,1.0],[1150,1.5],[1150,1.75],[1150,2.0],[1150,2.5],[1350,1.0],[1350,1.5],[1350,1.75],[1350,2.0],[1350,2.5],[1600,1.0],[1600,1.5],[1600,1.75],[1600,2.0],[1600,2.5]]},{"model":"LEHY-III-S","origin":"China [SMEC]","standard":"SMEC","place":"Passenger elevator","mr":"Machine room","pairs":[[630,1.0],[825,1.0],[900,1.0],[1050,1.0],[630,1.6],[825,1.6],[900,1.6],[1050,1.6],[630,1.75],[825,1.75],[900,1.75],[1050,1.75],[825,2.0],[900,2.0],[1050,2.0],[825,2.5],[900,2.5],[1050,2.5]]},{"model":"LEHY-Pro","origin":"China [SMEC]","standard":"SMEC","place":"Passenger elevator","mr":"Machine room","pairs":[[630,1.0],[825,1.0],[1050,1.0],[1200,1.0],[1350,1.0],[1600,1.0],[1800,1.0],[2025,1.0],[2250,1.0],[2500,1.0],[630,1.75],[825,1.75],[1050,1.75],[1200,1.75],[1350,1.75],[1600,1.75],[1800,1.75],[2025,1.75],[2250,1.75],[2500,1.75],[825,2.0],[1050,2.0],[1200,2.0],[1350,2.0],[1600,2.0],[1800,2.0],[2025,2.0],[825,2.5],[1050,2.5],[1200,2.5],[1350,2.5],[1600,2.5],[1800,2.5],[2025,2.5],[825,3.0],[1050,3.0],[1200,3.0],[1350,3.0],[1600,3.0]]},{"model":"NEXIEZ-S","origin":"Thailand [AMEC]","standard":"EN81-1","place":"Passenger elevator","mr":"Machine room less","pairs":[[320,1.0],[450,1.0]]},{"model":"NEXIEZ-MRL","origin":"China [MESE]","standard":"EN81-20/50","place":"Passenger elevator","mr":"Machine room less","pairs":[[450,1.0],[450,1.6],[450,1.75],[550,1.0],[550,1.6],[550,1.75],[630,1.0],[630,1.6],[630,1.75],[825,1.0],[825,1.6],[825,1.75],[825,2.0],[825,2.5],[1050,1.0],[1050,1.6],[1050,1.75],[1050,2.0],[1050,2.5],[1200,1.0],[1200,1.6],[1200,1.75],[1200,2.0],[1200,2.5],[1275,1.0],[1275,1.6],[1275,1.75],[1275,2.0],[1275,2.5],[1350,1.0],[1350,1.6],[1350,1.75],[1350,2.0],[1350,2.5],[1600,1.0],[1600,1.6],[1600,1.75],[1600,2.0],[1600,2.5],[1800,1.0],[1800,1.6],[1800,1.75],[1800,2.0],[1800,2.5],[2000,1.0],[2000,1.6],[2000,1.75],[2000,2.0],[2250,1.0],[2250,1.6],[2250,1.75],[2250,2.0],[2500,1.0],[2500,1.6],[2500,1.75]]},{"model":"LEHY-L-Pro","origin":"China [SMEC]","standard":"EN81-20/50","place":"Passenger elevator","mr":"Machine room less","pairs":[[630,1.0],[825,1.0],[1050,1.0],[630,1.75],[825,1.75],[1050,1.75]]},{"model":"LEHY-L-S","origin":"China [SMEC]","standard":"EN81-20/50","place":"Passenger elevator","mr":"Machine room less","pairs":[[630,1.0],[825,1.0],[1050,1.0],[1200,1.0],[1350,1.0],[1600,1.0],[1800,1.0],[2025,1.0],[2250,1.0],[2500,1.0],[630,1.75],[825,1.75],[1050,1.75],[1200,1.75],[1350,1.75],[1600,1.75],[1800,1.75],[2025,1.75],[2250,1.75],[2500,1.75],[825,2.0],[1050,2.0],[1200,2.0],[1350,2.0],[1600,2.0],[1800,2.0],[2025,2.0],[825,2.5],[1050,2.5],[1200,2.5],[1350,2.5],[1600,2.5],[1800,2.5],[2025,2.5],[1050,3.0],[1200,3.0],[1350,3.0],[1600,3.0]]},{"model":"NEXIEZ-Fit","origin":"Thailand [AMEC]","standard":"EN81-20/50","place":"Passenger elevator","mr":"Machine room less","pairs":[[450,1.0],[630,1.0]]},{"model":"NEXIEZ-MRL V2","origin":"Thailand [AMEC]","standard":"EN81-20/50","place":"Passenger elevator","mr":"Machine room less","pairs":[[450,1.0],[450,1.6],[450,1.75],[630,1.0],[630,1.6],[630,1.75],[825,1.0],[825,1.6],[825,1.75],[825,2.0],[825,2.5],[1000,1.0],[1000,1.6],[1000,1.75],[1000,2.0],[1000,2.5],[1275,1.0],[1275,1.6],[1275,1.75],[1275,2.0],[1275,2.5],[1350,1.0],[1350,1.6],[1350,1.75],[1350,2.0],[1350,2.5],[1600,1.0],[1600,1.6],[1600,1.75],[1600,2.0],[1600,2.5],[1800,1.0],[1800,1.6],[1800,1.75]]},{"model":"NEXIEZ-MRL","origin":"China [MESE]","standard":"MELCO","place":"Passenger elevator","mr":"Machine room less","pairs":[[450,1.0],[450,1.6],[450,1.75],[550,1.0],[550,1.6],[550,1.75],[630,1.0],[630,1.6],[630,1.75],[825,1.0],[825,1.6],[825,1.75],[825,2.0],[825,2.5],[1050,1.0],[1050,1.6],[1050,1.75],[1050,2.0],[1050,2.5],[1200,1.0],[1200,1.6],[1200,1.75],[1200,2.0],[1200,2.5],[1275,1.0],[1275,1.6],[1275,1.75],[1275,2.0],[1275,2.5],[1350,1.0],[1350,1.6],[1350,1.75],[1350,2.0],[1350,2.5],[1600,1.0],[1600,1.6],[1600,1.75],[1600,2.0],[1600,2.5],[1800,1.0],[1800,1.6],[1800,1.75],[1800,2.0],[1800,2.5],[2000,1.0],[2000,1.6],[2000,1.75],[2000,2.0],[2250,1.0],[2250,1.6],[2250,1.75],[2250,2.0],[2500,1.0],[2500,1.6],[2500,1.75]]},{"model":"NEXIEZ-MRL V2","origin":"Thailand [AMEC]","standard":"MELCO","place":"Passenger elevator","mr":"Machine room less","pairs":[[450,1.0],[450,1.6],[450,1.75],[630,1.0],[630,1.6],[630,1.75],[825,1.0],[825,1.6],[825,1.75],[825,2.0],[825,2.5],[1000,1.0],[1000,1.6],[1000,1.75],[1000,2.0],[1000,2.5],[1275,1.0],[1275,1.6],[1275,1.75],[1275,2.0],[1275,2.5],[1350,1.0],[1350,1.6],[1350,1.75],[1350,2.0],[1350,2.5],[1600,1.0],[1600,1.6],[1600,1.75],[1600,2.0],[1600,2.5],[1800,1.0],[1800,1.6],[1800,1.75]]},{"model":"NEXIEZ-S","origin":"Thailand [AMEC]","standard":"MELCO","place":"Passenger elevator","mr":"Machine room less","pairs":[[320,1.0],[450,1.0]]},{"model":"LEHY-L-Pro","origin":"China [SMEC]","standard":"SMEC","place":"Passenger elevator","mr":"Machine room less","pairs":[[630,1.0],[825,1.0],[1050,1.0],[630,1.75],[825,1.75],[1050,1.75]]},{"model":"LEHY-L-S","origin":"China [SMEC]","standard":"SMEC","place":"Passenger elevator","mr":"Machine room less","pairs":[[630,1.0],[825,1.0],[1050,1.0],[1200,1.0],[1350,1.0],[1600,1.0],[1800,1.0],[2025,1.0],[2250,1.0],[2500,1.0],[630,1.75],[825,1.75],[1050,1.75],[1200,1.75],[1350,1.75],[1600,1.75],[1800,1.75],[2025,1.75],[2250,1.75],[2500,1.75],[825,2.0],[1050,2.0],[1200,2.0],[1350,2.0],[1600,2.0],[1800,2.0],[2025,2.0],[825,2.5],[1050,2.5],[1200,2.5],[1350,2.5],[1600,2.5],[1800,2.5],[2025,2.5],[1050,3.0],[1200,3.0],[1350,3.0],[1600,3.0]]},{"model":"NexWay","origin":"Japan [MELINA]","standard":"EN81-20/50","place":"Passenger elevator","mr":"Machine room","pairs":[[750,2.0],[750,2.5],[750,3.0],[750,3.5],[750,4.0],[750,4.5],[750,5.0],[750,6.0],[750,7.0],[750,8.0],[750,9.0],[750,10.0],[825,2.0],[825,2.5],[825,3.0],[825,3.5],[825,4.0],[825,4.5],[825,5.0],[825,6.0],[825,7.0],[825,8.0],[825,9.0],[825,10.0],[900,2.0],[900,2.5],[900,3.0],[900,3.5],[900,4.0],[900,4.5],[900,5.0],[900,6.0],[900,7.0],[900,8.0],[900,9.0],[900,10.0],[1000,2.0],[1000,2.5],[1000,3.0],[1000,3.5],[1000,4.0],[1000,4.5],[1000,5.0],[1000,6.0],[1000,7.0],[1000,8.0],[1000,9.0],[1000,10.0],[1050,2.0],[1050,2.5],[1050,3.0],[1050,3.5],[1050,4.0],[1050,4.5],[1050,5.0],[1050,6.0],[1050,7.0],[1050,8.0],[1050,9.0],[1050,10.0],[1200,2.0],[1200,2.5],[1200,3.0],[1200,3.5],[1200,4.0],[1200,4.5],[1200,5.0],[1200,6.0],[1200,7.0],[1200,8.0],[1200,9.0],[1200,10.0],[1275,2.0],[1275,2.5],[1275,3.0],[1275,3.5],[1275,4.0],[1275,4.5],[1275,5.0],[1275,6.0],[1275,7.0],[1275,8.0],[1275,9.0],[1275,10.0],[1350,2.0],[1350,2.5],[1350,3.0],[1350,3.5],[1350,4.0],[1350,4.5],[1350,5.0],[1350,6.0],[1350,7.0],[1350,8.0],[1350,9.0],[1350,10.0],[1600,2.0],[1600,2.5],[1600,3.0],[1600,3.5],[1600,4.0],[1600,4.5],[1600,5.0],[1600,6.0],[1600,7.0],[1600,8.0],[1600,9.0],[1600,10.0],[1800,2.0],[1800,2.5],[1800,3.0],[1800,3.5],[1800,4.0],[1800,4.5],[1800,5.0],[1800,6.0],[1800,7.0],[1800,8.0],[1800,9.0],[1800,10.0],[2000,2.0],[2000,2.5],[2000,3.0],[2000,3.5],[2000,4.0],[2000,4.5],[2000,5.0],[2000,6.0],[2000,7.0],[2000,8.0],[2000,9.0],[2000,10.0],[2250,2.0],[2250,2.5],[2250,3.0],[2250,3.5],[2250,4.0],[2250,4.5],[2250,5.0],[2250,6.0],[2250,7.0],[2250,8.0],[2250,9.0],[2250,10.0],[2500,2.0],[2500,2.5],[2500,3.0],[2500,3.5],[2500,4.0],[2500,4.5],[2500,5.0],[2500,6.0],[2500,7.0],[2500,8.0],[2500,9.0],[2500,10.0],[3000,2.0],[3000,2.5],[3000,3.0],[3000,3.5],[3000,4.0],[3000,4.5],[3000,5.0],[3000,6.0],[3000,7.0],[3000,8.0],[3000,9.0],[3000,10.0]]},{"model":"GFM-T","origin":"Japan [MELINA]","standard":"MELCO","place":"Cargo Elevator","mr":"Machine room","pairs":[[750,0.75],[750,1.0],[1000,0.75],[1000,1.0],[1500,0.75],[1500,1.0],[2000,0.75],[2000,1.0],[2500,0.75],[2500,1.0],[3000,0.75],[3000,1.0]]},{"model":"GFC-L3","origin":"Taiwan [TMEC]","standard":"MELCO","place":"Cargo Elevator","mr":"Machine room","pairs":[[750,1.0],[750,1.5],[750,1.75],[1000,1.0],[1000,1.5],[1000,1.75],[1500,0.75],[1500,1.0],[1500,1.5],[1500,1.75],[2000,0.75],[2000,1.0],[2000,1.5],[2000,1.75],[2500,0.75],[2500,1.0],[2500,1.5],[2500,1.75]]},{"model":"GFC-L2","origin":"Taiwan [TMEC]","standard":"MELCO","place":"Cargo Elevator","mr":"Machine room","pairs":[[750,0.75],[750,1.0],[750,1.5],[750,1.75],[1000,0.75],[1000,1.0],[1000,1.5],[1000,1.75],[1500,0.75],[1500,1.0],[1500,1.5],[1500,1.75],[2000,0.75],[2000,1.0],[2000,1.5],[2000,1.75],[2500,0.75],[2500,1.0],[2500,1.5],[2500,1.75],[3000,0.5],[3000,0.75],[3000,1.0],[3500,0.5],[3500,0.75],[3500,1.0],[4000,0.5],[4000,0.75],[5000,0.5],[5000,0.75]]},{"place":"Passenger elevator","model":"NexWay","standard":"EN81-20/50","origin":"China [MESE]","mr":"Machine room","pairs":[[900,2.0],[900,2.5],[900,3.0],[900,3.5],[900,4.0],[1050,2.0],[1050,2.5],[1050,3.0],[1050,3.5],[1050,4.0],[1200,2.0],[1200,2.5],[1200,3.0],[1200,3.5],[1200,4.0],[1200,5.0],[1200,6.0],[1350,2.0],[1350,2.5],[1350,3.0],[1350,3.5],[1350,4.0],[1350,5.0],[1350,6.0],[1600,2.0],[1600,2.5],[1600,3.0],[1600,3.5],[1600,4.0],[1600,5.0],[1600,6.0],[1800,2.0],[1800,2.5],[1800,3.0],[1800,3.5],[1800,4.0],[1800,5.0],[1800,6.0],[2000,2.0],[2000,2.5],[2000,3.0],[2000,3.5],[2000,4.0],[2000,5.0],[2000,6.0]]},{"place":"Passenger elevator","model":"NexWay-S","standard":"MELCO","origin":"China [MESE]","mr":"Machine room","pairs":[[825,1.0],[825,1.6],[825,1.75],[825,2.0],[825,2.5],[825,3.0],[900,1.0],[900,1.6],[900,1.75],[900,2.0],[900,2.5],[900,3.0],[1000,1.0],[1000,1.6],[1000,1.75],[1000,2.0],[1000,2.5],[1000,3.0],[1050,1.0],[1050,1.6],[1050,1.75],[1050,2.0],[1050,2.5],[1050,3.0],[1200,1.0],[1200,1.6],[1200,1.75],[1200,2.0],[1200,2.5],[1200,3.0],[1350,1.0],[1350,1.6],[1350,1.75],[1350,2.0],[1350,2.5],[1350,3.0],[1600,1.0],[1600,1.6],[1600,1.75],[1600,2.0],[1600,2.5],[1600,3.0],[1800,1.0],[1800,1.6],[1800,1.75],[1800,2.0],[1800,2.5],[1800,3.0]]},{"place":"Passenger elevator","model":"NexWay-S","standard":"EN81-20/50","origin":"China [MESE]","mr":"Machine room","pairs":[[825,1.0],[825,1.6],[825,1.75],[825,2.0],[825,2.5],[825,3.0],[900,1.0],[900,1.6],[900,1.75],[900,2.0],[900,2.5],[900,3.0],[1000,1.0],[1000,1.6],[1000,1.75],[1000,2.0],[1000,2.5],[1000,3.0],[1050,1.0],[1050,1.6],[1050,1.75],[1050,2.0],[1050,2.5],[1050,3.0],[1200,1.0],[1200,1.6],[1200,1.75],[1200,2.0],[1200,2.5],[1200,3.0],[1350,1.0],[1350,1.6],[1350,1.75],[1350,2.0],[1350,2.5],[1350,3.0],[1600,1.0],[1600,1.6],[1600,1.75],[1600,2.0],[1600,2.5],[1600,3.0],[1800,1.0],[1800,1.6],[1800,1.75],[1800,2.0],[1800,2.5],[1800,3.0]]},{"model":"NEXIEZ-MRL","origin":"Japan [MELINA]","standard":"MELCO","place":"Passenger elevator","mr":"Machine room less","pairs":[[630,1.0],[630,1.6],[630,1.75],[630,2.0],[825,1.0],[825,1.6],[825,1.75],[825,2.0],[825,2.5],[1050,1.0],[1050,1.6],[1050,1.75],[1050,2.0],[1050,2.5],[1275,1.0],[1275,1.6],[1275,1.75],[1275,2.0],[1275,2.5],[1350,1.0],[1350,1.6],[1350,1.75],[1350,2.0],[1350,2.5],[1600,1.0],[1600,1.6],[1600,1.75],[1600,2.0],[1600,2.5]]},{"model":"NEXIEZ-MRL","origin":"Japan [MELINA]","standard":"EN81-1","place":"Passenger elevator","mr":"Machine room less","pairs":[[630,1.0],[630,1.6],[630,1.75],[630,2.0],[825,1.0],[825,1.6],[825,1.75],[825,2.0],[825,2.5],[1050,1.0],[1050,1.6],[1050,1.75],[1050,2.0],[1050,2.5],[1275,1.0],[1275,1.6],[1275,1.75],[1275,2.0],[1275,2.5],[1350,1.0],[1350,1.6],[1350,1.75],[1350,2.0],[1350,2.5],[1600,1.0],[1600,1.6],[1600,1.75],[1600,2.0],[1600,2.5]]},{"model":"NEXIEZ-MRL","origin":"Japan [MELINA]","standard":"EN81-20/50","place":"Passenger elevator","mr":"Machine room less","pairs":[[630,1.0],[630,1.6],[630,1.75],[630,2.0],[825,1.0],[825,1.6],[825,1.75],[825,2.0],[825,2.5],[1050,1.0],[1050,1.6],[1050,1.75],[1050,2.0],[1050,2.5],[1275,1.0],[1275,1.6],[1275,1.75],[1275,2.0],[1275,2.5],[1350,1.0],[1350,1.6],[1350,1.75],[1350,2.0],[1350,2.5],[1600,1.0],[1600,1.6],[1600,1.75],[1600,2.0],[1600,2.5]]},{"model":"ELENESSA","origin":"Taiwan [TMEC]","standard":"EN81-20/50","place":"Passenger elevator","mr":"Machine room less","pairs":[[1800,1.0],[1800,1.6],[1800,1.75],[2000,1.0],[2000,1.6],[2000,1.75],[2250,1.0],[2250,1.6],[2250,1.75],[2500,1.0],[2500,1.6],[2500,1.75]]},{"model":"NexWay-S Series IP","origin":"Japan [MELINA]","standard":"EN81-1","place":"Passenger elevator","mr":"Machine room","pairs":[[1600,0.75],[1600,1.0],[1600,1.6],[1600,1.75],[1800,0.75],[1800,1.0],[1800,1.6],[1800,1.75],[2025,0.75],[2025,1.0],[2025,1.6],[2025,1.75],[2250,0.75],[2250,1.0],[2250,1.6],[2250,1.75],[2500,0.75],[2500,1.0],[2500,1.6],[2500,1.75]]},{"model":"NexWay-S Series IP","origin":"Japan [MELINA]","standard":"EN81-20/50","place":"Passenger elevator","mr":"Machine room","pairs":[[1600,0.75],[1600,1.0],[1600,1.6],[1600,1.75],[1800,0.75],[1800,1.0],[1800,1.6],[1800,1.75],[2025,0.75],[2025,1.0],[2025,1.6],[2025,1.75],[2250,0.75],[2250,1.0],[2250,1.6],[2250,1.75],[2500,0.75],[2500,1.0],[2500,1.6],[2500,1.75]]}];
+// ---- Travel max (loaded from Excel column H) ----
+let TRAVEL_ITEMS = [];
+const _norm = (s)=> (s==null?'':String(s)).trim().toLowerCase();
+const _parseNums = (s)=>{
+  if(!s) return [];
+  return String(s).split(/[,;]+/).map(x=>parseFloat(x.trim())).filter(x=>!Number.isNaN(x));
+};
+window.__TRAVEL_MAX_EMBEDDED__ = {"note": "Max Travel loaded from Excel column H. Applies per row (Model + Standard).", "items": [{"place": "Cargo Elevator", "model": "LEHY-G", "origin": "China [SMEC]", "mr_type": "Machine room", "standard": "EN81-20/50", "capacity_set": "2000, 3000, 5000", "speed_set": "0.5, 1", "max_travel_m": 60.0}, {"place": "Cargo Elevator", "model": "LEHY-G", "origin": "China [SMEC]", "mr_type": "Machine room", "standard": "SMEC", "capacity_set": "2000, 3000, 5000", "speed_set": "0.5, 1", "max_travel_m": 60.0}, {"place": "Cargo Elevator", "model": "LEHY-L-G", "origin": "China [SMEC]", "mr_type": "Machine room less", "standard": "EN81-20/50", "capacity_set": "2000, 3000, 5000", "speed_set": "0.5, 1", "max_travel_m": 60.0}, {"place": "Cargo Elevator", "model": "LEHY-L-G", "origin": "China [SMEC]", "mr_type": "Machine room less", "standard": "SMEC", "capacity_set": "2000, 3000, 5000", "speed_set": "0.5, 1", "max_travel_m": 60.0}, {"place": "Passenger elevator", "model": "NexWay-S IP V2", "origin": "Japan [MELINA]", "mr_type": "Machine room", "standard": "EN81-1", "capacity_set": "825, 1050, 1200, 1275, 1350", "speed_set": "1, 1.6, 1.75, 2, 2.5, 3", "max_travel_m": 150.0}, {"place": "Passenger elevator", "model": "NexWay-S IP V2", "origin": "Japan [MELINA]", "mr_type": "Machine room", "standard": "EN81-1", "capacity_set": "825, 1050, 1275, 1350", "speed_set": "1, 1.6, 1.75, 2, 2.5, 3", "max_travel_m": 150.0}, {"place": "Passenger elevator", "model": "NEXIEZ-MR", "origin": "Thailand [AMEC]", "mr_type": "Machine room", "standard": "EN81-1", "capacity_set": "825, 1050, 1275, 1350", "speed_set": "1, 1.6, 1.75, 2, 2.5", "max_travel_m": 120.0}, {"place": "Passenger elevator", "model": "NEXIEZ-MR", "origin": "Thailand [AMEC]", "mr_type": "Machine room", "standard": "EN81-20/50", "capacity_set": "825, 1000, 1050, 1275, 1350", "speed_set": "1, 1.6, 1.75, 2, 2.5", "max_travel_m": 120.0}, {"place": "Passenger elevator", "model": "NexWay-S AP V2", "origin": "Thailand [AMEC]", "mr_type": "Machine room", "standard": "EN81-1", "capacity_set": "825, 1050, 1275, 1350", "speed_set": "1, 1.6, 1.75, 2, 2.5, 3", "max_travel_m": 150.0}, {"place": "Passenger elevator", "model": "NexWay", "origin": "China [MESE]", "mr_type": "Machine room", "standard": "MELCO", "capacity_set": "900, 1050, 1200, 1350, 1600, 1800, 2000", "speed_set": "2, 2.5, 3, 3.5, 4, 5, 6", "max_travel_m": 150.0}, {"place": "Passenger elevator", "model": "LEHY-III-S", "origin": "China [SMEC]", "mr_type": "Machine room", "standard": "EN81-20/50", "capacity_set": "630, 825, 900, 1050, 1150, 1200, 1350, 1600", "speed_set": "1, 1.75, 2, 2.5", "max_travel_m": 120.0}, {"place": "Passenger elevator", "model": "LEHY-Pro", "origin": "China [SMEC]", "mr_type": "Machine room", "standard": "EN81-20/50", "capacity_set": "630, 825, 1050, 1150, 1200, 1350, 1600, 1800, 2025, 2250, 2500", "speed_set": "1, 1.75, 2, 2.5, 3", "max_travel_m": 150.0}, {"place": "Passenger elevator", "model": "NexWay-S IP V2", "origin": "Japan [MELINA]", "mr_type": "Machine room", "standard": "EN81-20/50", "capacity_set": "825, 1000, 1050, 1200, 1275, 1350", "speed_set": "1, 1.6, 1.75, 2, 2.5, 3", "max_travel_m": 150.0}, {"place": "Passenger elevator", "model": "NexWay-S IP V2", "origin": "Japan [MELINA]", "mr_type": "Machine room", "standard": "EN81-20/50", "capacity_set": "825, 1000, 1050, 1200, 1275, 1350", "speed_set": "1, 1.6, 1.75, 2, 2.5, 3", "max_travel_m": 150.0}, {"place": "Passenger elevator", "model": "NexWay-S AP V2", "origin": "Thailand [AMEC]", "mr_type": "Machine room", "standard": "EN81-20/50", "capacity_set": "825, 1000, 1050, 1200, 1275, 1350", "speed_set": "1, 1.6, 1.75, 2, 2.5, 3", "max_travel_m": 150.0}, {"place": "Passenger elevator", "model": "NexWay-S AP V2 – Package R", "origin": "Thailand [AMEC]", "mr_type": "Machine room", "standard": "MELCO", "capacity_set": "1000, 1050, 1200, 1275, 1350", "speed_set": "3.5, 4", "max_travel_m": 180.0}, {"place": "Passenger elevator", "model": "NexWay-S AP V2 – Package R", "origin": "Thailand [AMEC]", "mr_type": "Machine room", "standard": "EN81-20/50", "capacity_set": "1000, 1050, 1200, 1275, 1350", "speed_set": "3.5, 4", "max_travel_m": 180.0}, {"place": "Passenger elevator", "model": "NexWay", "origin": "China [MESE]", "mr_type": "Machine room", "standard": "MELCO", "capacity_set": "900, 1050, 1200, 1350, 1600, 1800, 2000", "speed_set": "2, 2.5, 3, 3.5, 4, 5, 6", "max_travel_m": 150.0}, {"place": "Passenger elevator", "model": "NEXIEZ-MR", "origin": "Thailand [AMEC]", "mr_type": "Machine room", "standard": "MELCO", "capacity_set": "450, 550, 600, 700, 750, 900, 1000, 1150, 1350, 1600", "speed_set": "1, 1.5, 1.75, 2", "max_travel_m": 120.0}, {"place": "Passenger elevator", "model": "NEXIEZ-MR", "origin": "Thailand [AMEC]", "mr_type": "Machine room", "standard": "MELCO", "capacity_set": "450, 550, 600, 700, 750, 900, 1000, 1150, 1350, 1600", "speed_set": "2.5", "max_travel_m": 134.0}, {"place": "Passenger elevator", "model": "LEHY-III-S", "origin": "China [SMEC]", "mr_type": "Machine room", "standard": "SMEC", "capacity_set": "630, 825, 900, 1050, 1150, 1200, 1350, 1600", "speed_set": "1, 1.75, 2, 2.5", "max_travel_m": 120.0}, {"place": "Passenger elevator", "model": "LEHY-Pro", "origin": "China [SMEC]", "mr_type": "Machine room", "standard": "SMEC", "capacity_set": "630, 825, 1050, 1150, 1200, 1350, 1600, 1800, 2025, 2250, 2500", "speed_set": "1, 1.75, 2, 2.5, 3", "max_travel_m": 150.0}, {"place": "Passenger elevator", "model": "NEXIEZ-S", "origin": "Thailand [AMEC]", "mr_type": "Machine room less", "standard": "EN81-1", "capacity_set": "320, 450", "speed_set": "1", "max_travel_m": 30.0}, {"place": "Passenger elevator", "model": "NEXIEZ-MRL", "origin": "China [MESE]", "mr_type": "Machine room less", "standard": "EN81-20/50", "capacity_set": "450, 550, 630, 825, 1050, 1200, 1275, 1350, 1600, 1800, 2000, 2250, 2500", "speed_set": "1, 1.6, 1.75, 2, 2.5", "max_travel_m": 105.0}, {"place": "Passenger elevator", "model": "LEHY-L-Pro", "origin": "China [SMEC]", "mr_type": "Machine room less", "standard": "EN81-20/50", "capacity_set": "630, 825, 1050, 1200, 1350, 1600, 1800, 2000, 2250, 2500", "speed_set": "0.5, 1, 1.6, 1.75, 2, 2.5, 3", "max_travel_m": 120.0}, {"place": "Passenger elevator", "model": "LEHY-L-S", "origin": "China [SMEC]", "mr_type": "Machine room less", "standard": "EN81-20/50", "capacity_set": "320, 450, 550, 630, 825, 1050", "speed_set": "0.4, 0.63, 1, 1.75", "max_travel_m": 88.0}, {"place": "Passenger elevator", "model": "NEXIEZ-Fit", "origin": "Thailand [AMEC]", "mr_type": "Machine room less", "standard": "EN81-20/50", "capacity_set": "450, 630", "speed_set": "1", "max_travel_m": 30.0}, {"place": "Passenger elevator", "model": "NEXIEZ-MRL V2", "origin": "Thailand [AMEC]", "mr_type": "Machine room less", "standard": "EN81-20/50", "capacity_set": "450, 630, 825, 1000, 1275, 1350, 1600, 1800", "speed_set": "1, 1.6, 1.75, 2, 2.5", "max_travel_m": 105.0}, {"place": "Passenger elevator", "model": "NEXIEZ-MRL", "origin": "China [MESE]", "mr_type": "Machine room less", "standard": "MELCO", "capacity_set": "450, 550, 630, 825, 1050, 1200, 1275, 1350, 1600, 1800, 2000, 2250, 2500", "speed_set": "1, 1.6, 1.75, 2, 2.5", "max_travel_m": 105.0}, {"place": "Passenger elevator", "model": "NEXIEZ-MRL V2", "origin": "Thailand [AMEC]", "mr_type": "Machine room less", "standard": "MELCO", "capacity_set": "450, 630, 825, 1000, 1275, 1350, 1600, 1800", "speed_set": "1, 1.6, 1.75, 2, 2.5", "max_travel_m": 105.0}, {"place": "Passenger elevator", "model": "NEXIEZ-S", "origin": "Thailand [AMEC]", "mr_type": "Machine room less", "standard": "MELCO", "capacity_set": "320, 450", "speed_set": "1", "max_travel_m": 30.0}, {"place": "Passenger elevator", "model": "LEHY-L-Pro", "origin": "China [SMEC]", "mr_type": "Machine room less", "standard": "SMEC", "capacity_set": "630, 825, 1050, 1200, 1350, 1600, 1800, 2000, 2250, 2500", "speed_set": "0.5, 1, 1.6, 1.75, 2, 2.5, 3", "max_travel_m": 120.0}, {"place": "Passenger elevator", "model": "LEHY-L-S", "origin": "China [SMEC]", "mr_type": "Machine room less", "standard": "SMEC", "capacity_set": "320, 450, 550, 630, 825, 1050", "speed_set": "0.4, 0.63, 1, 1.75", "max_travel_m": 80.0}, {"place": "Passenger elevator", "model": "NexWay", "origin": "Japan [MELINA]", "mr_type": "Machine room", "standard": "EN81-20/50", "capacity_set": "750, 825, 900, 1000, 1050, 1200, 1275, 1350, 1600, 1800, 2000, 2250, 2500, 3000", "speed_set": "2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10", "max_travel_m": 250.0}, {"place": "Cargo Elevator", "model": "GFM-T", "origin": "Japan [MELINA]", "mr_type": "Machine room", "standard": "MELCO", "capacity_set": "750, 1000, 1500, 2000, 2500, 3000", "speed_set": "0.75, 1", "max_travel_m": 30.0}, {"place": "Cargo Elevator", "model": "GFC-L3", "origin": "Taiwan [TMEC]", "mr_type": "Machine room", "standard": "MELCO", "capacity_set": "750, 1000, 1500, 2000, 2500", "speed_set": "0.75, 1, 1.5, 1.75", "max_travel_m": 80.0}, {"place": "Cargo Elevator", "model": "GFC-L2", "origin": "Taiwan [TMEC]", "mr_type": "Machine room", "standard": "MELCO", "capacity_set": "750, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 5000", "speed_set": "0.5, 0.75, 1, 1.5, 1.75", "max_travel_m": 40.0}, {"place": "Passenger elevator", "model": "NexWay", "origin": "China [MESE]", "mr_type": "Machine room", "standard": "EN81-20/50", "capacity_set": "900, 1050, 1200, 1350, 1600, 1800, 2000", "speed_set": "2, 2.5, 3, 3.5, 4, 5, 6", "max_travel_m": 150.0}, {"place": "Passenger elevator", "model": "NexWay-S", "origin": "China [MESE]", "mr_type": "Machine room", "standard": "MELCO", "capacity_set": "825, 900, 1000, 1050, 1200, 1350, 1600, 1800", "speed_set": "1, 1.6, 1.75, 2, 2.5, 3", "max_travel_m": 150.0}, {"place": "Passenger elevator", "model": "NexWay-S", "origin": "China [MESE]", "mr_type": "Machine room", "standard": "EN81-20/50", "capacity_set": "825, 900, 1000, 1050, 1200, 1350, 1600, 1800", "speed_set": "1, 1.6, 1.75, 2, 2.5, 3", "max_travel_m": 150.0}, {"place": "Passenger elevator", "model": "NEXIEZ-MRL", "origin": "Japan [MELINA]", "mr_type": "Machine room less", "standard": "MELCO", "capacity_set": "630, 825, 1050, 1275, 1350, 1600", "speed_set": "1, 1.6, 1.75, 2, 2.5", "max_travel_m": 80.0}, {"place": "Passenger elevator", "model": "NEXIEZ-MRL", "origin": "Japan [MELINA]", "mr_type": "Machine room less", "standard": "EN81-1", "capacity_set": "630, 825, 1050, 1275, 1350, 1600", "speed_set": "1, 1.6, 1.75, 2, 2.5", "max_travel_m": 80.0}, {"place": "Passenger elevator", "model": "NEXIEZ-MRL", "origin": "Japan [MELINA]", "mr_type": "Machine room less", "standard": "EN81-20/50", "capacity_set": "630, 825, 1050, 1275, 1350, 1600", "speed_set": "1, 1.6, 1.75, 2, 2.5", "max_travel_m": 80.0}, {"place": "Passenger elevator", "model": "ELENESSA", "origin": "Taiwan [TMEC]", "mr_type": "Machine room less", "standard": "EN81-20/50", "capacity_set": "1800, 2000, 2250, 2500", "speed_set": "1, 1.6, 1.75", "max_travel_m": 60.0}, {"place": "Passenger elevator", "model": "NexWay-S Series IP", "origin": "Japan [MELINA]", "mr_type": "Machine room", "standard": "EN81-1", "capacity_set": "1600, 1800, 2025, 2250, 2500", "speed_set": "0.75, 1, 1.6, 1.75", "max_travel_m": 80.0}, {"place": "Passenger elevator", "model": "NexWay-S Series IP", "origin": "Japan [MELINA]", "mr_type": "Machine room", "standard": "EN81-20/50", "capacity_set": "1600, 1800, 2025, 2250, 2500", "speed_set": "0.75, 1, 1.6, 1.75", "max_travel_m": 80.0}]};
+async function loadTravelMax(){
+  try{
+    const embedded = window.__TRAVEL_MAX_EMBEDDED__;
+    if(embedded && embedded.items){
+      const js = embedded;
+      TRAVEL_ITEMS = (js.items||[]).map(it=>({
+        ...it,
+        _cap:_parseNums(it.capacity_set),
+        _spd:_parseNums(it.speed_set),
+        _max:(it.max_travel_m!=null?Number(it.max_travel_m):null)
+      })).filter(it=>it._max!=null && !Number.isNaN(it._max));
+      TRAVEL_READY = true;
+      return true;
+    }
+    const res = await fetch('data/travel_max.json', {cache:'no-store'});
+
+    const js = await res.json();
+    TRAVEL_ITEMS = (js.items||[]).map(it=>({
+      ...it,
+      _cap:_parseNums(it.capacity_set),
+      _spd:_parseNums(it.speed_set),
+      _max:(it.max_travel_m!=null?Number(it.max_travel_m):null)
+    })).filter(it=>it._max!=null && !Number.isNaN(it._max));
+  }catch(e){
+    TRAVEL_ITEMS = [];
+  }
+}
+let TRAVEL_READY = false;
+const TRAVEL_PROMISE = loadTravelMax().then(()=>{TRAVEL_READY=true;}).catch(()=>{TRAVEL_READY=false;});
+
+function lookupMaxTravel(row, cap, spd){
+
+  // Detailed max-travel rules (capacity + speed) for selected models.
+  const capN = (cap && cap!=='__NONE__') ? Number(cap) : null;
+  const spdN = (spd && spd!=='__NONE__') ? Number(spd) : null;
+  const inRange=(x,a,b)=> (x!=null && (a==null||x>=a) && (b==null||x<=b));
+  const inList=(x,arr)=> (x!=null && arr.includes(x));
+  const det = (()=>{
+    if(capN==null || spdN==null) return undefined;
+    // NEXIEZ-MR AMEC (MR)
+    if(row.model==='NEXIEZ-MR' && row.origin==='Thailand [AMEC]'){
+      if(row.standard==='MELCO'){
+        if(inRange(capN,450,1600) && spdN===1.0) return 60;
+        if(inRange(capN,550,1600) && spdN===1.75) return 90;
+        if(inRange(capN,750,1350) && spdN===2.5) return 120;
+        if(capN>1350 && capN<=1600 && spdN===2.5) return 90;
+        return null;
+      }
+      if(row.standard==='EN81-1'){
+        if(inRange(capN,825,1350) && spdN===1.0) return 60;
+        if(inRange(capN,825,1350) && spdN===1.75) return 90;
+        if(capN>825 && capN<=1050 && spdN===2.0) return 90;
+        if(capN>1050 && capN<=1350 && spdN===2.0) return 120;
+        return null;
+      }
+      if(row.standard==='EN81-20/50'){
+        if(inRange(capN,825,1350) && spdN===1.0) return 60;
+        if(inRange(capN,825,1350) && spdN===1.6) return 90;
+        if(capN>825 && capN<=1050 && spdN===2.0) return 90;
+        if(capN>1050 && capN<=1350 && spdN===2.0) return 120;
+        return null;
+      }
+    }
+    // NEXIEZ-MRL MESE & NEXIEZ-MRL V2 AMEC
+    if((row.model==='NEXIEZ-MRL' && row.origin==='China [MESE]') || (row.model==='NEXIEZ-MRL V2' && row.origin==='Thailand [AMEC]')){
+      if(inList(capN,[450,630])){ if(spdN===1.0) return 60; if([1.6,1.75].includes(spdN)) return 80; return null; }
+      if(inList(capN,[825,1000,1200,1275,1350,1600])){ if(spdN===1.0) return 60; if([1.6,1.75,2.0,2.5].includes(spdN)) return 105; return null; }
+      if(capN===1800){ if(spdN===1.0) return 60; if([1.6,1.75].includes(spdN)) return 60; return null; }
+      return null;
+    }
+    // NEXIEZ-MRL MELINA (all standards)
+    if(row.model==='NEXIEZ-MRL' && row.origin==='Japan [MELINA]'){
+      if(inList(capN,[450,550,630])){ if(spdN===1.0) return 60; if([1.6,1.75].includes(spdN)) return 80; return null; }
+      if(inList(capN,[825,1050])){ if(spdN===1.0) return 60; if([1.6,1.75,2.0,2.5].includes(spdN)) return 80; return null; }
+      if(inList(capN,[1275,1350,1600])){ if(spdN===1.0) return 60; if([1.6,1.75].includes(spdN)) return 70; if([2.0,2.5].includes(spdN)) return 80; return null; }
+      return null;
+    }
+    // NexWay-S V2 AP/IP (Rear)
+    if((row.model==='NexWay-S AP V2' && row.origin==='Thailand [AMEC]') || (row.model==='NexWay-S IP V2' && row.origin==='Japan [MELINA]')){
+      if(spdN===1.0) return 60;
+      if([1.5,1.6,1.75].includes(spdN)) return 105;
+      if(spdN===2.0) return 120;
+      if([2.5,3.0].includes(spdN)) return 150;
+      return null;
+    }
+
+    // NexWay-S (China [MESE])
+    // Rule: for CAP <= 1350, use same mapping as NexWay-S V2 AP/IP (Rear).
+    // For larger CAP (1350/1600/1800) user still wants allow up to 150m by speed.
+    if(row.model==='NexWay-S' && row.origin==='China [MESE]'){
+      if(spdN===1.0) return 60;
+      if([1.5,1.6,1.75].includes(spdN)) return 105;
+      if(spdN===2.0) return 120;
+      if([2.5,3.0].includes(spdN)) return 150;
+      return null;
+    }
+    // NexWay China MESE (use same rear mapping for low speeds; keep other speeds via fallback)
+    if(row.model==='NexWay' && row.origin==='China [MESE]'){
+      if(spdN===1.0) return 60;
+      if([1.5,1.6,1.75].includes(spdN)) return 105;
+      if(spdN===2.0) return 120;
+      if([2.5,3.0].includes(spdN)) return 150;
+      return null;
+    }
+    return undefined;
+  })();
+  if(det!==undefined) return det;
+  if(!TRAVEL_ITEMS.length) return null;
+  const c = (cap && cap!=='__NONE__') ? Number(cap) : null;
+  const s = (spd && spd!=='__NONE__') ? Number(spd) : null;
+  const hits = TRAVEL_ITEMS.filter(it=>{
+    if(_norm(it.place)!==_norm(row.place)) return false;
+    if(_norm(it.model)!==_norm(row.model)) return false;
+    if(_norm(it.origin)!==_norm(row.origin)) return false;
+    // excel uses MR Type; tool uses row.mr
+    if(_norm(it.mr_type)!==_norm(row.mr)) return false;
+    if(_norm(it.standard)!==_norm(row.standard)) return false;
+    if(c!=null && it._cap.length && !it._cap.some(v=>Math.abs(v-c)<1e-9)) return false;
+    if(s!=null && it._spd.length && !it._spd.some(v=>Math.abs(v-s)<1e-9)) return false;
+    return true;
+  });
+  if(!hits.length) return null;
+  // conservative: take minimum max travel among matching rows
+  return hits.reduce((mn,it)=> mn==null?it._max:Math.min(mn,it._max), null);
+}
+
+const el = (id)=>document.getElementById(id);
+// Set Updated date to today's local date (offline-safe)
+try{
+  const d=new Date();
+  const yyyy=d.getFullYear();
+  const mm=String(d.getMonth()+1).padStart(2,'0');
+  const dd=String(d.getDate()).padStart(2,'0');
+  const s=`${yyyy}-${mm}-${dd}`;
+  const u=el('updatedDate');
+  if(u) u.textContent=s;
+}catch(e){}
+const placeSel=el('place'), mrSel=el('mr'), stdSel=el('std'), countrySel=el('country'), capSel=el('cap'), spdSel=el('spd'), travelIn=el('travelInput');
+const warn=el('warn'), tbody=el('tbody'), statusEl=el('status'), techNoteEl=el('techNote');
+const countEl=el('count'), uniqEl=el('uniq'), uniqOEl=el('uniqO');
+const folder=el('folder'), folderHint=el('folderHint'), preview=el('preview');
+
+// --- origin logo mapping ---
+function logoForOrigin(origin){
+  const s = String(origin||"");
+  // SMEC uses Shanghai Mitsubishi Elevator logo; others use Mitsubishi Electric logo
+  return s.includes('[SMEC]') ? 'assets/logo_smec.png' : 'assets/logo_me.png';
+}
+
+// --- compliance rules ---
+function isCocPass(r){
+  const model = String(r.model||'').toUpperCase();
+  const origin = String(r.origin||'');
+  const standard = String(r.standard||'').toUpperCase().trim();
+
+  // Freight models (GFM-T / GFC-L2 / GFC-L3) are not eligible for COC
+  if(['GFM-T','GFC-L2','GFC-L3'].includes(model)) return false;
+
+  // Force FAIL for newly added models
+  if(['ELENESSA','NEXWAY-S SERIES IP'].includes(model)) return false;
+
+  // Default: pass
+  // Exception: 3 MESE models fail ONLY when Standard = MELCO
+  if(origin.includes('[MESE]') && standard === 'MELCO'){
+    if(model === 'NEXWAY' || model === 'NEXWAY-S' || model === 'NEXIEZ-MRL') return false;
+  }
+  return true;
+}
+
+function fireproofResult(r){
+  const origin = String(r.origin||'');
+  const model  = String(r.model||'');
+  const umodel = model.toUpperCase();
+  // Force FAIL for newly added models
+  if(['ELENESSA','NEXWAY-S SERIES IP'].includes(umodel)) return { pass:false, note:'' };
+  // Default rule: only AMEC passes Fireproof door testing
+  if (origin.includes('[AMEC]')) return { pass:true, note:'' };
+  // Exception: LEHY-G & LEHY-L-G are PASS but limited to 2CO only
+  if (model === 'LEHY-G' || model === 'LEHY-L-G') return { pass:true, note:'2CO Only' };
+  return { pass:false, note:'' };
+}
+
+// --- lightbox for full image ---
+const lightbox = document.getElementById('lightbox');
+const lbImg = document.getElementById('lbImg');
+const lbClose = document.getElementById('lbClose');
+function openLightbox(src){
+  if(!src) return;
+  lbImg.src = src;
+  lightbox.classList.add('open');
+  lightbox.setAttribute('aria-hidden','false');
+}
+function closeLightbox(){
+  lightbox.classList.remove('open');
+  lightbox.setAttribute('aria-hidden','true');
+  lbImg.src = '';
+}
+lbClose?.addEventListener('click', closeLightbox);
+lightbox?.addEventListener('click', (e)=>{ if(e.target===lightbox) closeLightbox(); });
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && lightbox.classList.contains('open')) closeLightbox(); });
+
+let folderFiles = [];
+function uniq(arr){ return Array.from(new Set(arr)); }
+function byNum(a,b){ return Number(a)-Number(b); }
+
+function countryFromOrigin(origin){
+  const o = (origin||'').toString().trim();
+  if(!o) return '';
+  return o.split(' ')[0];
+}
+
+function setCountryOptions(select, countries){
+  const prev = select.value || '__ALL__';
+  select.innerHTML='';
+  const opt0=document.createElement('option');
+  opt0.value='__ALL__';
+  opt0.textContent='(All)';
+  select.appendChild(opt0);
+  const flag = { China:'🇨🇳', Thailand:'🇹🇭', Japan:'🇯🇵', Taiwan:'🇹🇼' };
+  countries.forEach(c=>{
+    const o=document.createElement('option');
+    o.value=c;
+    o.textContent = `${c} ${flag[c]||''}`.trim();
+    select.appendChild(o);
+  });
+  // restore if still available
+  if(Array.from(select.options).some(o=>o.value===prev)) select.value=prev;
+}
+
+function setOptions(select, values, placeholder){
+  select.innerHTML='';
+  const opt0=document.createElement('option');
+  opt0.value='__ALL__';
+  opt0.textContent=placeholder || '(Tất cả)';
+  select.appendChild(opt0);
+  values.forEach(v=>{
+    const o=document.createElement('option');
+    o.value=v;
+    o.textContent=v;
+    select.appendChild(o);
+  });
+}
+
+function currentFilter(){
+  return {place:placeSel.value, mr:mrSel.value, std:stdSel.value, country:countrySel.value, cap:capSel.value, spd:spdSel.value, travel:travelIn.value};
+}
+
+function filterBase(){
+  warn.textContent='';
+  const f=currentFilter();
+  return DATA.filter(r=>{
+    if(f.place!=='__ALL__' && r.place!==f.place) return false;
+    if(f.mr!=='__ALL__' && r.mr!==f.mr) return false;
+    if(f.std!=='__ALL__' && r.standard!==f.std) return false;
+    if(f.country!=='__ALL__' && countryFromOrigin(r.origin)!==f.country) return false;
+    return true;
+  });
+}
+
+function rebuildDropdowns(){
+  warn.textContent='';
+  const f=currentFilter();
+
+  const places = uniq(DATA.map(r=>r.place).filter(Boolean)).sort();
+  const mrs = uniq(DATA.map(r=>r.mr).filter(Boolean)).sort();
+  setOptions(placeSel, places, '(Tất cả)');
+  setOptions(mrSel, mrs, '(Tất cả)');
+
+  placeSel.value = places.includes(f.place) ? f.place : '__ALL__';
+  mrSel.value = mrs.includes(f.mr) ? f.mr : '__ALL__';
+
+  const base_pm = DATA.filter(r=>{
+    if(placeSel.value!=='__ALL__' && r.place!==placeSel.value) return false;
+    if(mrSel.value!=='__ALL__' && r.mr!==mrSel.value) return false;
+    return true;
+  });
+
+  const stds = uniq(base_pm.map(r=>r.standard).filter(Boolean)).sort();
+  setOptions(stdSel, stds, '(Tất cả)');
+  stdSel.value = stds.includes(f.std) ? f.std : '__ALL__';
+
+  const base_pms = DATA.filter(r=>{
+    if(placeSel.value!=='__ALL__' && r.place!==placeSel.value) return false;
+    if(mrSel.value!=='__ALL__' && r.mr!==mrSel.value) return false;
+    if(stdSel.value!=='__ALL__' && r.standard!==stdSel.value) return false;
+    return true;
+  });
+  const countries = uniq(base_pms.map(r=>countryFromOrigin(r.origin)).filter(Boolean)).sort();
+  setCountryOptions(countrySel, countries);
+  if(f.country==='__ALL__' || f.country==='__NONE__') countrySel.value='__ALL__';
+  else if(countries.includes(f.country)) countrySel.value=f.country;
+  else countrySel.value='__ALL__';
+
+  const base = filterBase();
+  const caps = uniq(base.flatMap(r=>r.pairs.map(p=>p[0]))).sort(byNum).map(String);
+
+  capSel.innerHTML='';
+  const cap0=document.createElement('option');
+  cap0.value='__NONE__';
+  cap0.textContent='(Chọn Capacity)';
+  capSel.appendChild(cap0);
+  caps.forEach(v=>{
+    const o=document.createElement('option');
+    o.value=v; o.textContent=v;
+    capSel.appendChild(o);
+  });
+  capSel.value = caps.includes(f.cap) ? f.cap : '__NONE__';
+
+  rebuildSpeed();
+}
+
+function rebuildSpeed(){
+  const f=currentFilter();
+  const base = filterBase();
+  let speeds=[];
+  if(f.cap && f.cap!=='__NONE__'){
+    const capNum=Number(f.cap);
+    speeds = uniq(base.flatMap(r=>r.pairs.filter(p=>p[0]===capNum).map(p=>p[1]))).sort(byNum).map(String);
+  }
+
+  spdSel.innerHTML='';
+  const sAll=document.createElement('option');
+  sAll.value='__ALL__';
+  sAll.textContent='(All)';
+  spdSel.appendChild(sAll);
+
+  const s0=document.createElement('option');
+  s0.value='__NONE__';
+  s0.textContent='(Chọn Speed)';
+  spdSel.appendChild(s0);
+  speeds.forEach(v=>{
+    const o=document.createElement('option');
+    o.value=v; o.textContent=v;
+    spdSel.appendChild(o);
+  });
+  spdSel.value = (f.spd==='__ALL__' || speeds.includes(f.spd)) ? f.spd : '__ALL__';
+}
+
+async function run(){
+  // Clear informational note in Results header (separate from validation warnings)
+  if(techNoteEl){ techNoteEl.textContent=''; techNoteEl.style.display='none'; }
+  // Travel technical inquiry note is rendered per-row (Matched column), not in the header.
+  window.__TRAVEL_NUM = null;
+  const f=currentFilter();
+  if(f.cap==='__NONE__'){
+    warn.textContent='Vui lòng chọn Capacity.';
+    return;
+  }
+  const capNum=Number(f.cap);
+  const speedAll = (f.spd==='__ALL__');
+  const spdNum = speedAll ? null : Number(f.spd);
+  if(!speedAll && (f.spd==='__NONE__' || Number.isNaN(spdNum))){
+    warn.textContent='Vui lòng chọn Speed (hoặc chọn All).';
+    return;
+  }
+
+  const base = filterBase();
+  // base hit by capacity (and speed if specified)
+  let hits0 = [];
+  if(speedAll){
+    hits0 = base.filter(r=>r.pairs.some(p=>p[0]===capNum));
+  }else{
+    hits0 = base.filter(r=>r.pairs.some(p=>p[0]===capNum && p[1]===spdNum));
+  }
+
+  // Travel filter (manual input): require Travel <= Max Travel (from Excel)
+  let hitsSource = hits0;
+  const travelVal = (f.travel||'').trim();
+  let travelNum = null;
+  const suggestedMap = new Map(); // row -> suggested speeds (numbers)
+  if(travelVal!==''){
+    const t = Number(travelVal);
+    if(!Number.isNaN(t)){
+      travelNum = t;
+      window.__TRAVEL_NUM = travelNum;
+      if(!TRAVEL_READY) { try{ await TRAVEL_PROMISE; }catch(e){} }
+      if(!TRAVEL_ITEMS.length){
+        // if no travel rules, do not hard-fail; just warn and skip travel filtering
+        warn.textContent = 'Chưa có dữ liệu Max Travel cho Travel filter.';
+      }else{
+        if(speedAll){
+          hitsSource = hitsSource.filter(r=>{
+            const speeds = uniq(r.pairs.filter(p=>p[0]===capNum).map(p=>p[1])).sort(byNum);
+            const ok = speeds.filter(s=>{
+              const mx = lookupMaxTravel(r, String(capNum), String(s));
+              return (mx!=null) && (t <= mx + 1e-9);
+            });
+            if(ok.length){
+              suggestedMap.set(r, ok);
+              return true;
+            }
+            return false;
+          });
+        }else{
+          hitsSource = hitsSource.filter(r=>{
+            const mx = lookupMaxTravel(r, f.cap, f.spd);
+            return (mx!=null) && (t <= mx + 1e-9);
+          });
+        }
+      }
+    }
+  }
+
+  // De-duplicate results: same Model + Standard + Origin + MR Type + Uses
+  const seen = new Set();
+  const hits = [];
+  for(const r of hitsSource){
+    const key = [r.model, r.standard, r.origin, r.mr, r.place].join('||');
+    if(seen.has(key)) continue;
+    seen.add(key);
+    hits.push(r);
+  }
+
+  // Prefer options by Origin (for sales): MELINA > AMEC > MESE > SMEC, then model/standard
+  const originRank = (o)=>{
+    const s = String(o||'').toUpperCase();
+    if (s.includes('[MELINA]')) return 0;
+    if (s.includes('[AMEC]'))   return 1;
+    if (s.includes('[MESE]'))   return 2;
+    if (s.includes('[SMEC]'))   return 3;
+    return 99;
+  };
+  hits.sort((a,b)=>{
+    const ra = originRank(a.origin);
+    const rb = originRank(b.origin);
+    if (ra !== rb) return ra - rb;
+    return (a.model||'').localeCompare(b.model||'') || (a.standard||'').localeCompare(b.standard||'');
+  });
+  renderTable(hits, capNum, speedAll ? '__ALL__' : spdNum, speedAll ? suggestedMap : null, travelNum);
+}
+
+function renderTable(rows, capNum, spdVal, suggestedMap, travelNum){
+  tbody.innerHTML='';
+  preview.innerHTML='';
+  preview.classList.remove('previewGrid');
+  if(rows.length){
+    statusEl.innerHTML = `Found ${rows.length} matching option(s). Click a row to view the detailed catalogue.`
+      + (rows.length>4 ? `<div class="muted" style="margin-top:4px">Tip: scroll inside the table to see all rows.</div>` : ``);
+  }else{
+    statusEl.textContent = 'No matching options for this combination.';
+  }
+  countEl.textContent = rows.length;
+  uniqEl.textContent = uniq(rows.map(r=>r.model)).length;
+  uniqOEl.textContent = uniq(rows.map(r=>r.origin)).length;
+
+  rows.forEach((r,idx)=>{
+    // Defensive: some legacy rows may miss pairs; avoid runtime errors that stop rendering.
+    const pairs = Array.isArray(r.pairs) ? r.pairs : [];
+    const cocPass = isCocPass(r);
+    const fire = fireproofResult(r);
+    const isAmec = String(r.origin||'').includes('[AMEC]');
+    const fireHtml = fire.pass
+      ? (`<span class="mark pass">✓</span>`
+          + (fire.note ? `<span class="mark-note">${fire.note}</span>` : ``)
+          + (isAmec ? `<a href="#" class="fire-detail" data-fire="amec">Click here to see detail</a>` : ``)
+        )
+      : `<span class="mark fail">✗</span>`;
+    const tr=document.createElement('tr');
+    tr.style.cursor='pointer';
+    
+    let matchedHtml = '';
+    let whyText = '';
+    let previewSpd = spdVal;
+    if(spdVal==='__ALL__'){
+      const baseSpds = uniq(pairs.filter(p=>p[0]===capNum).map(p=>p[1])).sort(byNum);
+      const sug = (suggestedMap && suggestedMap.get(r)) ? suggestedMap.get(r) : baseSpds;
+      const spdStr = (sug && sug.length) ? sug.join(', ') : '—';
+      matchedHtml = `<b>${capNum}</b> kg • <b>${spdStr}</b> m/s`;
+      whyText = (sug && sug.length) ? `cap==${capNum} & spd in [${spdStr}]` : `cap==${capNum}`;
+      previewSpd = (sug && sug.length) ? sug[0] : (baseSpds[0]||null);
+    }else{
+      matchedHtml = `<b>${capNum}</b> kg • <b>${spdVal}</b> m/s`;
+      whyText = `cap==${capNum} & spd==${spdVal}`;
+      previewSpd = spdVal;
+    }
+
+    // Per-row technical inquiry note (ONLY for NEXIEZ-MR / MELCO / AMEC @ 2.5m/s when Travel input >120m)
+    // IMPORTANT: do not rely on global/window vars; keep rendering stable.
+    {
+      const tnum = (typeof travelNum === 'number') ? travelNum : null;
+      if(tnum!=null && tnum > 120 + 1e-9 && capNum>=750 && capNum<=1350){
+        const isTarget = (String(r.model||'').trim()==='NEXIEZ-MR')
+          && (String(r.standard||'').trim()==='MELCO')
+          && (String(r.origin||'').toUpperCase().includes('[AMEC]'));
+        if(isTarget){
+          const has25 = (spdVal==='__ALL__')
+            ? ((((suggestedMap && suggestedMap.get(r)) ? suggestedMap.get(r) : [])||[]).some(s=>Math.abs(Number(s) - 2.5) < 1e-9))
+            : (Math.abs(Number(spdVal) - 2.5) < 1e-9);
+          if(has25){
+            matchedHtml += `<div class="techNote" style="margin-top:4px">Send technical inquiry case by case for Travel >120m</div>`;
+          }
+        }
+      }
+    }
+tr.innerHTML = `
+      <td>${idx+1}</td>
+      <td><b>${r.model}</b></td>
+      <td>${r.standard}</td>
+      <td><span class="chip">${r.origin}</span></td>
+      <td class="logoCol"><img src="${logoForOrigin(r.origin)}" alt="logo" /></td>
+      <td>${r.mr}</td>
+      <td><span class="mark ${cocPass?'pass':'fail'}">${cocPass?'✓':'✗'}</span></td>
+      <td>${fireHtml}</td>
+      <td>${matchedHtml}</td>
+      <td class="muted whyCol">${whyText}</td>
+    `;
+    // Fire detail (AMEC): open detail image without triggering row click
+    const fireLink = tr.querySelector('a.fire-detail');
+    if(fireLink){
+      fireLink.addEventListener('click', (e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        openLightbox('assets/firetest_amec_detail.jpg');
+      });
+    }
+    tr.addEventListener('click', ()=>showPreview([{row:r, cap:capNum, spd:previewSpd}]));
+    tbody.appendChild(tr);
+  });
+
+  showPreview(rows.slice(0,6).map(r=>({row:r, cap:capNum, spd:(spdVal==='__ALL__' ? ((suggestedMap&&suggestedMap.get(r))?suggestedMap.get(r)[0]:null) : spdVal)})));
+  renderMobileCards(rows, capNum, spdVal, suggestedMap);
+}
+
+
+function renderMobileCards(rows, capNum, spdVal, suggestedMap){
+  const m = document.getElementById('mresults');
+  if(!m) return;
+  m.innerHTML = '';
+  if(!rows.length){
+    m.innerHTML = `<div class="muted" style="padding:6px 0">Không có kết quả cho combo này.</div>`;
+    return;
+  }
+  rows.forEach((r,idx)=>{
+    const cocPass = isCocPass(r);
+    const fire = fireproofResult(r);
+    const isAmec = String(r.origin||'').includes('[AMEC]');
+    const card = document.createElement('div');
+    card.className = 'mcard';
+    card.tabIndex = 0;
+    const fireBlock = fire.pass
+      ? (`<span class="mark pass">✓</span>` + (fire.note ? `<span class="mark-note">${fire.note}</span>` : ``)
+         + (isAmec ? ` <a href="#" class="mlink fire-detail" data-fire="amec">Click here to see detail</a>` : ``))
+      : `<span class="mark fail">✗</span>`;
+    card.innerHTML = `
+      <div class="mtop">
+        <div>
+          <div class="mtitle">${r.model}</div>
+          <div class="mmeta">
+            <span class="chip">${r.origin}</span>
+            <span class="chip">${r.standard}</span>
+            <span class="chip">${r.mr}</span>
+          </div>
+        </div>
+        <div class="muted" style="font-weight:800">#${idx+1}</div>
+      </div>
+      <div class="mrow">
+        <span>COC: <b>${cocPass ? 'Pass' : 'Fail'}</b></span>
+        <span>Fire: ${fireBlock}</span>
+      </div>
+      <div class="mrow">
+        <span>Matched: <b>${capNum}</b> kg • <b>${spdText}</b> m/s</span>
+      </div>
+      ${(()=>{
+          const tnum = window.__TRAVEL_NUM;
+          const isTarget = (tnum!=null && tnum > 120 + 1e-9 && capNum>=750 && capNum<=1350)
+            && (String(r.model||'').trim()==='NEXIEZ-MR')
+            && (String(r.standard||'').trim()==='MELCO')
+            && (String(r.origin||'').toUpperCase().includes('[AMEC]'));
+          if(!isTarget) return '';
+          const has25 = (spdVal==='__ALL__')
+            ? ((suggestedMap.get(r)||[]).some(s=>Math.abs(Number(s) - 2.5) < 1e-9))
+            : (Math.abs(Number(spdVal) - 2.5) < 1e-9);
+          return has25 ? `<div class="techNote" style="margin-top:2px">Send technical inquiry case by case for Travel >120m</div>` : '';
+      })()}
+      <div class="mactions">
+        <span class="muted">Tap to view catalogue</span>
+      </div>
+    `;
+    // stop propagation on link
+    const fireLink = card.querySelector('a.fire-detail');
+    if(fireLink){
+      fireLink.addEventListener('click',(e)=>{
+        e.preventDefault(); e.stopPropagation();
+        openLightbox('assets/firetest_amec_detail.jpg');
+      });
+    }
+    const open = ()=>showPreview([{row:r, cap:capNum, spd:previewSpd}]);
+    card.addEventListener('click', open);
+    card.addEventListener('keypress', (e)=>{ if(e.key==='Enter') open(); });
+    m.appendChild(card);
+  });
+}
+
+function normFilename(s){
+  return String(s||'').replace(/[\/:*?"<>|]/g,'_').replace(/\s+/g,' ').trim();
+}
+
+function normalizeKey(s, isStandard){
+  s = (s||"").toString();
+  s = s.replace(/[–—]/g,'-');
+  if (isStandard) s = s.replace(/\//g,'_'); else s = s.replace(/\//g,'-');
+  s = s.replace(/&/g,'AND');
+  s = s.trim().toUpperCase();
+  s = s.replace(/\s+/g,'-');
+  s = s.replace(/[^A-Z0-9_-]+/g,'');
+  s = s.replace(/-+/g,'-').replace(/_+/g,'_');
+  s = s.replace(/^[-_]+|[-_]+$/g,'');
+  return s;
+}
+
+// Aliases giúp dùng chung 1 images cho nhiều biến thể model (giảm duplicate images)
+const MODEL_ALIASES = {
+  "NEXWAY-S-SERIES-IP": ["NEXWAY-S-SERIES-IPAP-VER2"],
+  "NEXWAY-S-AP-V2": ["NEXWAY-S-SERIES-IPAP-VER2"],
+  "NEXWAY-S-IP-V2": ["NEXWAY-S-SERIES-IPAP-VER2"],
+  "NEXWAY-S-AP-V2-PACKAGE-R": ["NEXWAY-S-PACKAGE-R"],
+  "NEXIEZ-MRL-V2": ["NEXIEZ-MRL_VER2"]
+};
+
+
+
+function originToFolder(origin){
+  origin = (origin||'').toString().toUpperCase();
+  if(origin.includes('TMEC')) return 'TMEC';
+  if(origin.includes('AMEC')) return 'AMEC';
+  if(origin.includes('MESE')) return 'MESE';
+  if(origin.includes('SMEC')) return 'SMEC';
+  if(origin.includes('MELINA')) return 'MELINA';
+  return 'AMEC';
+}
+function findImagePath(model, standard, origin){
+  const factory = originToFolder(origin);
+  const stdKey = normalizeKey(standard, true);
+  const modelKey = normalizeKey(model, false);
+  const keys = [modelKey].concat(MODEL_ALIASES[modelKey] || []);
+
+  // Candidate order:
+  // 1) MODEL_STANDARD (nếu có)
+  // 2) Với MELCO dùng chung EN81-1: MODEL_EN81-1
+  // 3) MODEL (shared)
+  const candidates = [];
+  for (const k of keys){
+    candidates.push(`./catalogue/${factory}/${k}_${stdKey}.png`);
+    candidates.push(`./catalogue/${factory}/${k}_${stdKey}.jpg`);
+    candidates.push(`./catalogue/${factory}/${k}_${stdKey}.jpeg`);
+    if ((standard||"").toString().toUpperCase()==='MELCO'){
+      candidates.push(`./catalogue/${factory}/${k}_EN81-1.png`);
+      candidates.push(`./catalogue/${factory}/${k}_EN81-1.jpg`);
+      candidates.push(`./catalogue/${factory}/${k}_EN81-1.jpeg`);
+    }
+    candidates.push(`./catalogue/${factory}/${k}.png`);
+    candidates.push(`./catalogue/${factory}/${k}.jpg`);
+    candidates.push(`./catalogue/${factory}/${k}.jpeg`);
+  }
+  return candidates;
+}
+
+function showPreview(items){
+  // Always render a 3x2 grid (6 slots) so user can compare options without scrolling.
+  preview.innerHTML='';
+  preview.classList.add('previewGrid');
+
+  const filled = Array.isArray(items) ? items.slice(0,6) : [];
+  while(filled.length < 6) filled.push(null);
+
+  filled.forEach((it, i)=>{
+    // Placeholder slot when there are fewer than 6 results
+    if(!it){
+      const box=document.createElement('div');
+      box.className='card previewCard';
+      box.style.borderRadius='14px';
+      box.style.border='1px dashed var(--line)';
+      box.style.boxShadow='none';
+      box.innerHTML = `
+        <div class="p">
+          <div class="muted" style="font-size:12px">Option #${i+1}</div>
+          <div class="muted" style="margin-top:10px;font-size:12px">—</div>
+          <div class="imgBox" style="opacity:.6">
+            <div class="muted msg" style="padding:10px;text-align:center;font-size:12px">No more options.</div>
+          </div>
+        </div>
+      `;
+      preview.appendChild(box);
+      return;
+    }
+
+    const r=it.row;
+    const box=document.createElement('div');
+    box.className='card previewCard';
+    box.style.borderRadius='14px';
+    box.style.border='1px solid var(--line)';
+    box.style.boxShadow='none';
+    box.innerHTML = `
+      <div class="p">
+        <div class="muted" style="font-size:12px">Option #${i+1}</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:6px">
+          <b>${r.model}</b>
+          <span class="chip">${r.origin}</span>
+          <span class="chip">${r.standard}</span>
+          <span class="chip">${it.cap}kg • ${it.spd}m/s</span>
+        </div>
+        <div class="imgBox">
+          <img style="display:none" />
+          <div class="muted msg" style="padding:10px;text-align:center;font-size:12px">No matching image found.</div>
+        </div>
+      </div>
+    `;
+    preview.appendChild(box);
+
+    const img=box.querySelector('img');
+    const msg=box.querySelector('.msg');
+    const paths=findImagePath(r.model,r.standard,r.origin);
+
+    let idxTry=0;
+    const tryNext=()=>{
+      if(idxTry>=paths.length) return;
+      img.onload=()=>{ img.style.display='block'; msg.style.display='none'; img.onclick=(ev)=>{ ev.stopPropagation(); openLightbox(img.src); }; };
+      img.onerror=()=>{ idxTry++; tryNext(); };
+      img.src=paths[idxTry];
+    };
+    tryNext();
+  });
+}
+
+function resetAll(
+){
+  placeSel.value='__ALL__';
+  mrSel.value='__ALL__';
+  stdSel.value='__ALL__';
+  countrySel.value='__ALL__';
+  loadTravelMax();
+rebuildDropdowns();
+  tbody.innerHTML='';
+  preview.innerHTML='';
+  statusEl.textContent='Ready. Click Run.';
+  warn.textContent='';
+  countEl.textContent='0'; uniqEl.textContent='0'; uniqOEl.textContent='0';
+}
+
+
+placeSel.addEventListener('change', rebuildDropdowns);
+mrSel.addEventListener('change', rebuildDropdowns);
+stdSel.addEventListener('change', rebuildDropdowns);
+countrySel.addEventListener('change', rebuildDropdowns);
+capSel.addEventListener('change', rebuildSpeed);
+
+el('run').addEventListener('click', run);
+el('reset').addEventListener('click', resetAll);
+folder.addEventListener('change', (e)=>{
+  folderFiles = Array.from(e.target.files||[]);
+  folderHint.textContent = folderFiles.length ? `Selected ${folderFiles.length} image files. Preview prioritizes filename matches trong folder.` : '';
+});
+
+rebuildDropdowns();
+</script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+    });
+  }
+</script>
+
+</body>
+</html>
