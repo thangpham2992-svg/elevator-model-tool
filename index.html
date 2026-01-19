@@ -662,7 +662,19 @@ function rebuildDropdowns(){
     if(stdSel.value!=='__ALL__' && r.standard!==stdSel.value) return false;
     return true;
   });
-  const countries = uniq(base_pms.map(r=>countryFromOrigin(r.origin)).filter(Boolean)).sort();
+  const countries = uniq(base_pms.map(r=>countryFromOrigin(r.origin)).filter(Boolean));
+  // Preferred dropdown order for day-to-day usage
+  const preferredCountryOrder = ['Japan', 'Thailand', 'China'];
+  countries.sort((a, b) => {
+    const ia = preferredCountryOrder.indexOf(a);
+    const ib = preferredCountryOrder.indexOf(b);
+    if (ia !== -1 || ib !== -1) {
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    }
+    return String(a).localeCompare(String(b));
+  });
   setCountryOptions(countrySel, countries);
   if(f.country==='__ALL__' || f.country==='__NONE__') countrySel.value='__ALL__';
   else if(countries.includes(f.country)) countrySel.value=f.country;
