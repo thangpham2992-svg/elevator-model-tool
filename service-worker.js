@@ -1,4 +1,4 @@
-const CACHE_NAME = 'elevator-tool-2026-01-12';
+const CACHE_NAME = 'elevator-tool-2026-01-19';
 const PRECACHE_URLS = [
   "README_RUN_EDGE.txt",
   "RUN_EDGE_1CLICK.bat",
