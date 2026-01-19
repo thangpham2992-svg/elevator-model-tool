@@ -191,12 +191,18 @@ main{position:relative;z-index:1;}
   .grid{gap:12px}
   .tablewrap{max-height:unset}
   table{min-width:0}
-  th,td{white-space:normal;word-break:break-word}
+  th,td{white-space:normal;word-break:normal;overflow-wrap:break-word}
   .whyCol{display:none}
   th.whyCol{display:none}
   .logoCol{display:none}
   th.logoCol{display:none}
 }
+@media (max-width: 1024px) and (orientation: portrait){
+  /* iPad portrait: use mobile card results to avoid cramped table headers */
+  .tablewrap{display:none}
+  .mresults{display:block}
+}
+
 @media (max-width: 768px){
   .tablewrap{display:none}
   .mresults{display:block}
