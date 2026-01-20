@@ -547,11 +547,12 @@ function setCountryOptions(select, countries){
   if(Array.from(select.options).some(o=>o.value===prev)) select.value=prev;
 }
 
-function setOptions(select, values, placeholder){
+function setOptions(select, values, allLabel){
+  // Default: (All) at top
   select.innerHTML='';
   const opt0=document.createElement('option');
   opt0.value='__ALL__';
-  opt0.textContent=placeholder || '(Tất cả)';
+  opt0.textContent=allLabel || '(All)';
   select.appendChild(opt0);
   values.forEach(v=>{
     const o=document.createElement('option');
@@ -559,6 +560,37 @@ function setOptions(select, values, placeholder){
     o.textContent=v;
     select.appendChild(o);
   });
+}
+
+function setOptionsAllLast(select, values, allLabel){
+  // For some dropdowns (Place of Uses / Machine room type): show common choices first, (All) last
+  select.innerHTML='';
+  values.forEach(v=>{
+    const o=document.createElement('option');
+    o.value=v;
+    o.textContent=v;
+    select.appendChild(o);
+  });
+  const optAll=document.createElement('option');
+  optAll.value='__ALL__';
+  optAll.textContent=allLabel || '(All)';
+  select.appendChild(optAll);
+}
+
+function applyPreferredOrder(list, preferred){
+  const pref = preferred || [];
+  const s = Array.from(new Set(list));
+  s.sort((a,b)=>{
+    const ia = pref.indexOf(a);
+    const ib = pref.indexOf(b);
+    if(ia!==-1 || ib!==-1){
+      if(ia===-1) return 1;
+      if(ib===-1) return -1;
+      return ia-ib;
+    }
+    return String(a).localeCompare(String(b));
+  });
+  return s;
 }
 
 function currentFilter(){
@@ -581,10 +613,16 @@ function rebuildDropdowns(){
   warn.textContent='';
   const f=currentFilter();
 
-  const places = uniq(DATA.map(r=>r.place).filter(Boolean)).sort();
-  const mrs = uniq(DATA.map(r=>r.mr).filter(Boolean)).sort();
-  setOptions(placeSel, places, '(Tất cả)');
-  setOptions(mrSel, mrs, '(Tất cả)');
+  const placesRaw = uniq(DATA.map(r=>r.place).filter(Boolean));
+  const mrsRaw = uniq(DATA.map(r=>r.mr).filter(Boolean));
+
+  // Preferred order based on sales usage
+  const places = applyPreferredOrder(placesRaw, ['Passenger elevator','Cargo Elevator']);
+  const mrs = applyPreferredOrder(mrsRaw, ['Machine room','Machine room less']);
+
+  // Place / MR: (All) at bottom
+  setOptionsAllLast(placeSel, places, '(All)');
+  setOptionsAllLast(mrSel, mrs, '(All)');
 
   placeSel.value = places.includes(f.place) ? f.place : '__ALL__';
   mrSel.value = mrs.includes(f.mr) ? f.mr : '__ALL__';
@@ -595,8 +633,11 @@ function rebuildDropdowns(){
     return true;
   });
 
-  const stds = uniq(base_pm.map(r=>r.standard).filter(Boolean)).sort();
-  setOptions(stdSel, stds, '(Tất cả)');
+  const stdsRaw = uniq(base_pm.map(r=>r.standard).filter(Boolean));
+  const stds = applyPreferredOrder(stdsRaw, ['MELCO','EN81-1','EN81-20/50','SMEC']);
+
+  // Standard: (All) on top
+  setOptions(stdSel, stds, '(All)');
   stdSel.value = stds.includes(f.std) ? f.std : '__ALL__';
 
   const base_pms = DATA.filter(r=>{
@@ -605,7 +646,19 @@ function rebuildDropdowns(){
     if(stdSel.value!=='__ALL__' && r.standard!==stdSel.value) return false;
     return true;
   });
-  const countries = uniq(base_pms.map(r=>countryFromOrigin(r.origin)).filter(Boolean)).sort();
+  const countries = uniq(base_pms.map(r=>countryFromOrigin(r.origin)).filter(Boolean));
+  // Preferred dropdown order for day-to-day usage
+  const preferredCountryOrder = ['Japan', 'Thailand', 'China'];
+  countries.sort((a, b) => {
+    const ia = preferredCountryOrder.indexOf(a);
+    const ib = preferredCountryOrder.indexOf(b);
+    if (ia !== -1 || ib !== -1) {
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    }
+    return String(a).localeCompare(String(b));
+  });
   setCountryOptions(countrySel, countries);
   if(f.country==='__ALL__' || f.country==='__NONE__') countrySel.value='__ALL__';
   else if(countries.includes(f.country)) countrySel.value=f.country;
