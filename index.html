@@ -268,10 +268,10 @@ main{position:relative;z-index:1;}
         </div>
         <div style="margin-top:10px">
           <label>Number of stops</label>
-          <select id="stops" disabled>
-            <option value="__DEV__">Currently under development</option>
+          <select id="stops">
+            <option value="__ALL__">(All)</option>
           </select>
-          <div class="muted" style="font-size:12px;margin-top:6px">Note: This field is not applied to any rules yet.</div>
+          <div class="muted" style="font-size:12px;margin-top:6px">Note: Models will be filtered out if selected stops exceed the model limit (when available).</div>
         </div>
 
 
@@ -501,6 +501,123 @@ function lookupMaxTravel(row, cap, spd){
   return hits.reduce((mn,it)=> mn==null?it._max:Math.min(mn,it._max), null);
 }
 
+// ------------------------------
+// Stops rules (commercial selector)
+// Returns:
+//   - number: maximum stops allowed
+//   - null: not applicable / no data
+function lookupMaxStops(row, cap, spd){
+  const model = String(row.model||'');
+  const origin = String(row.origin||'');
+  const std = String(row.standard||'');
+  const c = cap==null?null:Number(cap);
+  const s = spd==null?null:Number(spd);
+
+  // Helper
+  const has = (txt)=> model.toUpperCase().includes(txt);
+  const isAMEC = origin.toUpperCase().includes('[AMEC]');
+  const isMESE = origin.toUpperCase().includes('[MESE]');
+  const isMELINA = origin.toUpperCase().includes('[MELINA]');
+
+  // Simple max-stops rules
+  if(has('NEXIEZ-S')) return 10;
+  if(has('NEXIEZ-FIT')) return 10;
+  if(has('NEXIEZ-MR') && !has('MRL') && isAMEC) return 40; // NEXIEZ-MR (all standards)
+
+  // NexWay family (general)
+  if(model.trim()==='NexWay') return 64;
+
+  // MELINA (Japan) specific
+  if(isMELINA){
+    if(has('NEXIEZ-MRL')) return 30;
+    if(has('ELENESSA')) return 24;
+    if(has('GFM-T')) return 16;
+    // NexWay-S IP/AP series: 36 stops (32 when speed <= 1.75 m/s)
+    if(model.toUpperCase().includes('NEXWAY-S') && (model.toUpperCase().includes(' IP ') || model.toUpperCase().includes(' AP ')) ){
+      if(s!=null && s<=1.75) return 32;
+      return 36;
+    }
+  }
+
+  // Taiwan models (as provided)
+  if(model.toUpperCase().includes('GFC-L3')) return 30;
+  if(model.toUpperCase().includes('GFC-L2')) return 8;
+
+  // AMEC NexWay-S V2 (EN81-1 / EN81-20/50): max 50
+  if(isAMEC && model.toUpperCase().includes('NEXWAY-S') && model.toUpperCase().includes(' V2 ')){
+    if(std.toUpperCase().includes('EN81-1') || std.toUpperCase().includes('EN81-20/50')) return 50;
+  }
+
+  // AMEC NEXIEZ-MRL V2 (MELCO & EN81-20/50): capacity+speed table
+  if(isAMEC && model.toUpperCase().includes('NEXIEZ-MRL') && model.toUpperCase().includes('V2')){
+    if(!(std.toUpperCase().includes('MELCO') || std.toUpperCase().includes('EN81-20/50'))) return null;
+    if(c==null || s==null) return null;
+    const inSet = (arr)=>arr.includes(c);
+    if(inSet([450,630])){
+      if(s===1.0) return 22;
+      if(s===1.6 || s===1.75) return 30;
+      return null;
+    }
+    if(inSet([825,1000]) || inSet([1275,1350,1600])){
+      if(s===1.0) return 22;
+      if(s===1.6 || s===1.75 || s===2.0 || s===2.5) return 30;
+      return null;
+    }
+    if(c===1800){
+      if(s===1.0) return 22;
+      if(s===1.6 || s===1.75) return 30;
+      return null;
+    }
+    return null;
+  }
+
+  // MESE NEXIEZ-MRL (all standards): travel/stops table -> derive max stops
+  if(isMESE && model.toUpperCase().includes('NEXIEZ-MRL')){
+    if(c==null || s==null) return null;
+    const inRange = (v,a,b)=> v>=a && v<=b;
+
+    // 450~550
+    if(inRange(c,450,550)){
+      if(s===1.0) return 30;
+      if(s===1.6 || s===1.75) return 30;
+      return null;
+    }
+    // 630
+    if(c===630){
+      if(s===1.0) return 30;
+      if(s===1.6 || s===1.75) return 36;
+      return null;
+    }
+    // 825~1600
+    if(inRange(c,825,1600)){
+      if(s===1.0) return 30;
+      if(s===1.6 || s===1.75 || s===2.0 || s===2.5) return 36;
+      return null;
+    }
+    // 1800
+    if(c===1800){
+      if(s===1.0) return 30;
+      if(s===1.6 || s===1.75 || s===2.0 || s===2.5) return 36;
+      return null;
+    }
+    // 2000~2250
+    if(inRange(c,2000,2250)){
+      if(s===1.0) return 30;
+      if(s===1.6 || s===1.75 || s===2.0) return 36;
+      return null;
+    }
+    // 2500
+    if(c===2500){
+      if(s===1.0) return 30;
+      if(s===1.6 || s===1.75) return 36;
+      return null;
+    }
+    return null;
+  }
+
+  return null;
+}
+
 const el = (id)=>document.getElementById(id);
 // Set Updated date to today's local date (offline-safe)
 try{
@@ -512,7 +629,7 @@ try{
   const u=el('updatedDate');
   if(u) u.textContent=s;
 }catch(e){}
-const placeSel=el('place'), mrSel=el('mr'), stdSel=el('std'), countrySel=el('country'), capSel=el('cap'), spdSel=el('spd'), travelIn=el('travelInput');
+const placeSel=el('place'), mrSel=el('mr'), stdSel=el('std'), countrySel=el('country'), capSel=el('cap'), spdSel=el('spd'), travelIn=el('travelInput'), stopsSel=el('stops');
 const warn=el('warn'), tbody=el('tbody'), statusEl=el('status'), techNoteEl=el('techNote');
 const countEl=el('count'), uniqEl=el('uniq'), uniqOEl=el('uniqO');
 const folder=el('folder'), folderHint=el('folderHint'), preview=el('preview');
@@ -634,6 +751,22 @@ function setOptionsAllLast(select, values, allLabel){
   select.appendChild(optAll);
 }
 
+function initStopsOptions(){
+  // Stops dropdown is a simple (All) + 02-64 list
+  stopsSel.innerHTML='';
+  const optAll=document.createElement('option');
+  optAll.value='__ALL__';
+  optAll.textContent='(All)';
+  stopsSel.appendChild(optAll);
+  for(let i=2;i<=64;i++){
+    const opt=document.createElement('option');
+    opt.value=String(i);
+    opt.textContent=String(i).padStart(2,'0');
+    stopsSel.appendChild(opt);
+  }
+  stopsSel.value='__ALL__';
+}
+
 function applyPreferredOrder(list, preferred){
   const pref = preferred || [];
   const s = Array.from(new Set(list));
@@ -651,7 +784,7 @@ function applyPreferredOrder(list, preferred){
 }
 
 function currentFilter(){
-  return {place:placeSel.value, mr:mrSel.value, std:stdSel.value, country:countrySel.value, cap:capSel.value, spd:spdSel.value, travel:travelIn.value};
+  return {place:placeSel.value, mr:mrSel.value, std:stdSel.value, country:countrySel.value, cap:capSel.value, spd:spdSel.value, travel:travelIn.value, stops:stopsSel.value};
 }
 
 function filterBase(){
@@ -828,6 +961,25 @@ async function run(){
         }
       }
     }
+  }
+
+  // Stops filter (commercial selector)
+  const stopsVal = (f.stops||'__ALL__');
+  if(stopsVal !== '__ALL__'){
+    const stopsNum = Number(stopsVal);
+    if(Number.isNaN(stopsNum) || stopsNum < 2){
+      warn.textContent = 'Giá trị Number of stops không hợp lệ.';
+      return;
+    }
+    if(speedAll){
+      warn.textContent = 'Để lọc theo Number of stops, vui lòng chọn Speed (không chọn All).';
+      return;
+    }
+    hitsSource = hitsSource.filter(r=>{
+      const mx = lookupMaxStops(r, capNum, spdNum);
+      // conservative: if no data, exclude when stops is specified
+      return (mx != null) && (stopsNum <= mx);
+    });
   }
 
 
@@ -1166,6 +1318,7 @@ function resetAll(
   mrSel.value='__ALL__';
   stdSel.value='__ALL__';
   countrySel.value='__ALL__';
+  initStopsOptions();
   loadTravelMax();
 rebuildDropdowns();
   tbody.innerHTML='';
@@ -1189,6 +1342,7 @@ folder.addEventListener('change', (e)=>{
   folderHint.textContent = folderFiles.length ? `Selected ${folderFiles.length} image files. Preview prioritizes filename matches trong folder.` : '';
 });
 
+initStopsOptions();
 rebuildDropdowns();
 </script>
 
