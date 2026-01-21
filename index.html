@@ -518,6 +518,7 @@ function lookupMaxStops(row, cap, spd){
   const isAMEC = origin.toUpperCase().includes('[AMEC]');
   const isMESE = origin.toUpperCase().includes('[MESE]');
   const isMELINA = origin.toUpperCase().includes('[MELINA]');
+  const isSMEC = origin.toUpperCase().includes('[SMEC]');
 
   // Simple max-stops rules
   if(has('NEXIEZ-S')) return 10;
@@ -526,6 +527,38 @@ function lookupMaxStops(row, cap, spd){
 
   // NexWay family (general)
   if(model.trim()==='NexWay') return 64;
+
+  // SMEC (China) max-stops tables
+  // If a speed is not listed, we consider "Not applicable" => no limit data (return null) unless stated otherwise.
+  if(isSMEC){
+    // Use the provided speed argument (spd). If speed is not selected, sp will be null.
+    const sp = (spd==null? null : Number(spd));
+    const m = (model||'').trim().toUpperCase();
+
+    // Cargo (fixed)
+    if(m==='LEHY-G' || m==='LEHY-L-G') return 16;
+
+    // Passenger
+    // LEHY-III-S: speed-based (per catalogue tables)
+    if(m==='LEHY-III-S'){
+      if(sp===1.0) return 18;
+      if(sp===1.75) return 32;
+      if(sp===2.0 || sp===2.5) return 36;
+      return null; // other speeds not defined in table
+    }
+
+    // LEHY-L-S: speed-based (only 1.0 & 1.75 in table)
+    if(m==='LEHY-L-S'){
+      if(sp===1.0) return 18;
+      if(sp===1.75) return 28;
+      return null;
+    }
+
+    // LEHY-PRO / LEHY-L-PRO: max stops is a fixed 54 (not dependent on speed)
+    if(m==='LEHY-PRO' || m==='LEHY-L-PRO') return 54;
+
+    return null;
+  }
 
   // MELINA (Japan) specific
   if(isMELINA){
@@ -971,14 +1004,24 @@ async function run(){
       warn.textContent = 'Giá trị Number of stops không hợp lệ.';
       return;
     }
-    if(speedAll){
-      warn.textContent = 'Để lọc theo Number of stops, vui lòng chọn Speed (không chọn All).';
-      return;
-    }
     hitsSource = hitsSource.filter(r=>{
-      const mx = lookupMaxStops(r, capNum, spdNum);
-      // conservative: if no data, exclude when stops is specified
-      return (mx != null) && (stopsNum <= mx);
+      // If Speed is (All), apply the stop rule per available speed option
+      // (commercial selector behavior: keep the model if ANY speed variant can satisfy the selected stops).
+      const candidateSpeeds = speedAll
+        ? Array.from(new Set((r.pairs||[]).filter(p=>Number(p[0])===capNum).map(p=>Number(p[1]))))
+        : [spdNum];
+
+      let sawLimit = false;
+      for(const s of candidateSpeeds){
+        const mx = lookupMaxStops(r, capNum, s);
+        if(mx!=null){
+          sawLimit = true;
+          if(stopsNum<=mx) return true;
+        }
+      }
+      // If we don't have a max-stops limit for this model, do not filter it out.
+      if(!sawLimit) return true;
+      return false;
     });
   }
 
