@@ -258,7 +258,7 @@
       "mr_type": "Machine room less",
       "standard": "EN81-20/50",
       "capacity_set": "320, 450, 550, 630, 825, 1050",
-      "speed_set": "0.4, 0.63, 1, 1.75",
+      "speed_set": "0.4, 0.63, 1, 1.6, 1.75",
       "max_travel_m": 88.0
     },
     {
@@ -328,7 +328,7 @@
       "mr_type": "Machine room less",
       "standard": "SMEC",
       "capacity_set": "320, 450, 550, 630, 825, 1050",
-      "speed_set": "0.4, 0.63, 1, 1.75",
+      "speed_set": "0.4, 0.63, 1, 1.6, 1.75",
       "max_travel_m": 80.0
     },
     {
